@@ -2,7 +2,7 @@
 
 **Autonomous DeFi trading agent that learns from every trade.**
 
-claudefi runs a continuous loop across four DeFi domains—making decisions, executing trades, and generating "skills" from outcomes. Losses become warnings. Wins become patterns. The agent that runs today is smarter than the one that ran yesterday.
+claudefi runs a continuous loop across four DeFi domains—making decisions, executing trades, and generating "skills" from outcomes. Losses become warnings. Wins become patterns. The agent that runs today is smarter than the one that ran yesterday, all made possible by the claude agent sdk.
 
 ## Domains
 
