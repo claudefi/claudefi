@@ -1,74 +1,131 @@
-# Claudefi
+# claudefi
 
-**Autonomous DeFi Trading Agent powered by Claude Agent SDK**
+**Autonomous DeFi trading agent that learns from every trade.**
 
-Claudefi is a self-improving autonomous trading agent that runs a continuous loop across four DeFi domains. It observes markets, makes decisions with Claude, executes trades, and learns from outcomes to improve future performance.
+claudefi runs a continuous loop across four DeFi domains—making decisions, executing trades, and generating "skills" from outcomes. Losses become warnings. Wins become patterns. The agent that runs today is smarter than the one that ran yesterday.
+
+## Domains
+
+| Domain | Protocol | Strategy |
+|--------|----------|----------|
+| **DLMM** | Meteora | Concentrated liquidity provision |
+| **Perps** | Hyperliquid | Leveraged futures (max 5x) |
+| **Spot** | Jupiter | Memecoin momentum trading |
+| **Polymarket** | Polymarket | Prediction market arbitrage |
 
 ## Quick Start
 
 ```bash
-# Clone
 git clone https://github.com/claudefi/claudefi
-cd claudefi
-
-# Install
-npm install
-
-# Configure
-cp .env.example .env
-# Edit .env with your ANTHROPIC_API_KEY
-
-# Setup database
+cd claudefi && npm install
+cp .env.example .env  # add ANTHROPIC_API_KEY
 npm run db:setup
-
-# Run (paper trading)
 npm run ralph
 ```
 
-## Documentation
+Paper trading is on by default. Watch it think before risking real money.
 
-Full documentation is available in the [`docs/`](./docs/) directory:
+## The Ralph Loop
 
-- **[Getting Started](./docs/getting-started/quick-start.md)** - Installation and first run
-- **[Architecture](./docs/architecture/overview.md)** - How Claudefi works
-- **[Trading Domains](./docs/domains/overview.md)** - DLMM, Perps, Spot, Polymarket
-- **[Skills System](./docs/skills/overview.md)** - Self-improvement from outcomes
-- **[Risk Management](./docs/trading/risk-management.md)** - Guard rails and limits
-
-## Features
-
-- **4 Trading Domains**: DLMM liquidity provision, perpetual futures, spot memecoins, prediction markets
-- **Continuous Loop**: 30-minute decision cycles (configurable)
-- **Self-Improving**: Generates "skills" from wins and losses
-- **Risk Controls**: Multiple layers of validation and limits
-- **Paper Trading**: Safe testing with live market data
-
-## How It Works
+Named after Ralph Wiggum. Not because he's smart, but because he's relentlessly persistent.
 
 ```
-Trade -> Outcome -> Analysis -> Skill -> Better Future Trades
-           |                      ^
-           +----------------------+
-              Feedback Loop
+OBSERVE → THINK → ACT → LEARN → REPEAT
 ```
 
-When trades close, Claudefi analyzes outcomes and generates skills:
-- **Warning skills** from losses prevent similar mistakes
-- **Pattern skills** from wins replicate success
+Every 30 minutes:
+1. Fetch live market data across all domains
+2. Run parallel Claude subagents (one per domain)
+3. Validate decisions through hooks
+4. Execute approved trades
+5. Generate skills from outcomes
+
+## Skills System
+
+After every trade, the agent writes a skill explaining what happened:
+
+```
+"Entered SOL pool at 847% APR. TVL dropped 40% in 2 hours.
+IL exceeded fees. Lesson: high APR without volume confirmation is a trap."
+```
+
+Skills have TTL. Warnings expire after 60 days. Patterns last 90. The agent knows when to forget.
+
+Similar skills merge at 70% similarity. Ineffective skills (< 30% success rate) get pruned.
+
+## Risk Infrastructure
+
+- **Global drawdown limit**: -15% stops all new positions
+- **Domain drawdown limit**: -20% halves position sizes
+- **Position cap**: Max 3 per domain
+- **Confidence threshold**: Minimum 60% to execute
+- **Human approval**: Required for trades > $500
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  Ralph Loop (30 min)                │
+├─────────────────────────────────────────────────────┤
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌────────┐ │
+│  │  DLMM   │  │  Perps  │  │  Poly   │  │  Spot  │ │
+│  │ Subagent│  │ Subagent│  │ Subagent│  │Subagent│ │
+│  └────┬────┘  └────┬────┘  └────┬────┘  └───┬────┘ │
+│       │            │            │            │      │
+│       └────────────┴─────┬──────┴────────────┘      │
+│                          │                          │
+│                    ┌─────▼─────┐                    │
+│                    │   Hooks   │                    │
+│                    │ (validate)│                    │
+│                    └─────┬─────┘                    │
+│                          │                          │
+│                    ┌─────▼─────┐                    │
+│                    │  Execute  │                    │
+│                    └─────┬─────┘                    │
+│                          │                          │
+│                    ┌─────▼─────┐                    │
+│                    │  Skills   │                    │
+│                    │ (learn)   │                    │
+│                    └───────────┘                    │
+└─────────────────────────────────────────────────────┘
+```
 
 ## Commands
 
 ```bash
-npm run ralph              # Run all domains
-npm run claudefi:dlmm      # Run single domain
+npm run ralph              # Run all domains (parallel)
+npm run claudefi:dlmm      # Single domain
+npm run claudefi:perps
+npm run claudefi:spot
+npm run claudefi:polymarket
+npm run tui                # Terminal dashboard
 npm run db:studio          # Database browser
-npm run test               # Run tests
 ```
 
-## Requirements
+## Configuration
 
-- Node.js 18+
-- Anthropic API key
+```bash
+# Required
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Optional
+PAPER_TRADING=true              # Default: true
+ACTIVE_DOMAINS=dlmm,perps       # Default: all four
+CYCLE_INTERVAL_MS=1800000       # Default: 30 minutes
+CONFIDENCE_THRESHOLD=0.6        # Default: 0.6
+```
+
+## Costs
+
+~$13/day total API usage across all four domains. Less than most signal services, except this one learns.
+
+## Sovereignty
+
+Everything runs locally. Your API keys never leave your machine. No cloud, no backend, no "connect wallet." Clone, configure, run.
+
+## Documentation
+
+Full docs at [claudefi.com](https://claudefi.com) or in the [`docs/`](./docs/) directory.
 
 ## License
 
@@ -76,4 +133,4 @@ MIT
 
 ---
 
-*Built for the trenches*
+*built for the trenches*
