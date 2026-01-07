@@ -1,4 +1,4 @@
-# claudefi
+# <img src="icon.png" width="32" height="32" alt="claudefi" /> claudefi
 
 **Autonomous DeFi trading agent that learns from every trade.**
 
