@@ -179,3 +179,19 @@ model Trade {
   @@index([positionId])
   @@index([executedAt])
 }
+
+// Idempotency tracking for preventing duplicate trades
+model TradeIdempotency {
+  id             String   @id @default(cuid())
+  idempotencyKey String   @unique
+  domain         String
+  action         String
+  target         String
+  amountUsd      Float
+  result         String?  // JSON string for storing result
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+
+  @@index([expiresAt])
+  @@index([domain, action, target])
+}

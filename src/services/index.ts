@@ -4,3 +4,4 @@
  */
 
 export * from './trade-verifier.js';
+export * from './idempotency.js';
