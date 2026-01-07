@@ -1,0 +1,17 @@
+/* Match frontend logo styling */
+.VPNavBarTitle .title {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  text-transform: lowercase;
+}
+
+/* Site title in nav */
+.VPNav .VPNavBarTitle {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+/* Hide logo image, use text only */
+.VPNavBarTitle .logo {
+  display: none;
+}

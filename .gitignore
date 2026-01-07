@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build output
+dist/
+frontend/dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test
+coverage/
+
+# Misc
+*.tgz
+
+# SQLite database (local development)
+*.db
+*.db-journal
+prisma/claudefi.db
+
+# Skills (local learning - root level only)
+/skills/
+
+# Cache
+.cache/
+
+# Secrets
+*.pem
+*.key
+
+# VitePress
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
+# Frontend site (separate repo: claudefi/claudefi-site)
+frontend/

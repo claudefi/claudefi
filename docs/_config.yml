@@ -1,0 +1,58 @@
+# Claudefi Documentation Site Configuration
+# Compatible with Jekyll/GitHub Pages and similar static site generators
+
+title: Claudefi Documentation
+description: Autonomous DeFi Trading Agent powered by Claude Agent SDK
+baseurl: /docs
+url: ""
+
+# Theme (for GitHub Pages)
+theme: just-the-docs
+color_scheme: dark
+
+# Logo
+logo: /assets/logo.png
+
+# Repository
+aux_links:
+  "GitHub": https://github.com/claudefi/claudefi
+
+# Footer
+footer_content: "Copyright &copy; 2025 Claudefi. MIT License."
+
+# Search
+search_enabled: true
+search:
+  heading_level: 2
+  previews: 3
+  preview_words_before: 5
+  preview_words_after: 10
+  tokenizer_separator: /[\s/]+/
+  rel_url: true
+
+# Navigation structure
+nav_enabled: true
+nav_sort: case_insensitive
+
+# Collections for navigation
+collections:
+  docs:
+    output: true
+    permalink: /:path/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+kramdown:
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    block:
+      line_numbers: false

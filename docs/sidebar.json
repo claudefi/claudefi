@@ -1,0 +1,186 @@
+{
+  "docs": [
+    {
+      "title": "Introduction",
+      "path": "/docs/index.md"
+    },
+    {
+      "title": "Getting Started",
+      "children": [
+        {
+          "title": "Installation",
+          "path": "/docs/getting-started/installation.md"
+        },
+        {
+          "title": "Configuration",
+          "path": "/docs/getting-started/configuration.md"
+        },
+        {
+          "title": "Quick Start",
+          "path": "/docs/getting-started/quick-start.md"
+        }
+      ]
+    },
+    {
+      "title": "Architecture",
+      "children": [
+        {
+          "title": "Overview",
+          "path": "/docs/architecture/overview.md"
+        },
+        {
+          "title": "The Ralph Loop",
+          "path": "/docs/architecture/ralph-loop.md"
+        },
+        {
+          "title": "Directory Structure",
+          "path": "/docs/architecture/directory-structure.md"
+        }
+      ]
+    },
+    {
+      "title": "Trading Domains",
+      "children": [
+        {
+          "title": "Overview",
+          "path": "/docs/domains/overview.md"
+        },
+        {
+          "title": "DLMM (Meteora)",
+          "path": "/docs/domains/dlmm.md"
+        },
+        {
+          "title": "Perps (Hyperliquid)",
+          "path": "/docs/domains/perps.md"
+        },
+        {
+          "title": "Spot (Memecoins)",
+          "path": "/docs/domains/spot.md"
+        },
+        {
+          "title": "Polymarket",
+          "path": "/docs/domains/polymarket.md"
+        }
+      ]
+    },
+    {
+      "title": "MCP Server",
+      "children": [
+        {
+          "title": "Overview",
+          "path": "/docs/mcp-server/overview.md"
+        },
+        {
+          "title": "Tool Reference",
+          "path": "/docs/mcp-server/tools.md"
+        },
+        {
+          "title": "Custom Tools",
+          "path": "/docs/mcp-server/custom-tools.md"
+        }
+      ]
+    },
+    {
+      "title": "Skills System",
+      "children": [
+        {
+          "title": "Overview",
+          "path": "/docs/skills/overview.md"
+        },
+        {
+          "title": "Skill Types",
+          "path": "/docs/skills/types.md"
+        },
+        {
+          "title": "Generation",
+          "path": "/docs/skills/generation.md"
+        },
+        {
+          "title": "Effectiveness",
+          "path": "/docs/skills/effectiveness.md"
+        }
+      ]
+    },
+    {
+      "title": "Hooks System",
+      "children": [
+        {
+          "title": "Overview",
+          "path": "/docs/hooks/overview.md"
+        },
+        {
+          "title": "Built-in Hooks",
+          "path": "/docs/hooks/built-in.md"
+        },
+        {
+          "title": "Custom Hooks",
+          "path": "/docs/hooks/custom-hooks.md"
+        }
+      ]
+    },
+    {
+      "title": "Clients",
+      "children": [
+        {
+          "title": "Meteora",
+          "path": "/docs/clients/meteora.md"
+        },
+        {
+          "title": "Hyperliquid",
+          "path": "/docs/clients/hyperliquid.md"
+        },
+        {
+          "title": "Jupiter",
+          "path": "/docs/clients/jupiter.md"
+        },
+        {
+          "title": "Polymarket",
+          "path": "/docs/clients/polymarket.md"
+        }
+      ]
+    },
+    {
+      "title": "Database",
+      "children": [
+        {
+          "title": "Schema",
+          "path": "/docs/database/schema.md"
+        }
+      ]
+    },
+    {
+      "title": "Trading",
+      "children": [
+        {
+          "title": "Paper Trading",
+          "path": "/docs/trading/paper-trading.md"
+        },
+        {
+          "title": "Real Trading",
+          "path": "/docs/trading/real-trading.md"
+        },
+        {
+          "title": "Risk Management",
+          "path": "/docs/trading/risk-management.md"
+        }
+      ]
+    },
+    {
+      "title": "Reference",
+      "children": [
+        {
+          "title": "Environment Variables",
+          "path": "/docs/reference/environment-variables.md"
+        },
+        {
+          "title": "Commands",
+          "path": "/docs/reference/commands.md"
+        },
+        {
+          "title": "API Links",
+          "path": "/docs/reference/api-links.md"
+        }
+      ]
+    }
+  ]
+}

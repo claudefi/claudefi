@@ -1,0 +1,181 @@
+// Claudefi Local-First Database Schema
+// Default: SQLite for local development
+// Optional: PostgreSQL for production
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Agent configuration and balances
+model AgentConfig {
+  id                String   @id @default(uuid())
+  name              String   @default("claudefi")
+  dlmmBalance       Float    @default(2500)
+  perpsBalance      Float    @default(2500)
+  polymarketBalance Float    @default(2500)
+  spotBalance       Float    @default(2500)
+  paperTrading      Boolean  @default(true)
+  activeDomains     String   @default("dlmm,perps,polymarket,spot")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Trading positions across all domains
+model Position {
+  id              String    @id @default(uuid())
+  domain          String    // dlmm, perps, polymarket, spot
+  target          String    // pool_address, symbol, condition_id, mint
+  targetName      String?   // human-readable name (token symbol, market question)
+  entryValueUsd   Float
+  currentValueUsd Float
+  status          String    @default("open") // open, closed
+  side            String?   // long, short, yes, no (domain-specific)
+  size            Float?    // position size (shares, tokens, contracts)
+  entryPrice      Float?    // entry price per unit
+  currentPrice    Float?    // current price per unit
+  openedAt        DateTime  @default(now())
+  closedAt        DateTime?
+  realizedPnl     Float?
+  metadata        String    @default("{}") // JSON string for domain-specific data
+
+  @@index([domain])
+  @@index([status])
+  @@index([domain, status])
+}
+
+// Trading decisions and their outcomes
+model Decision {
+  id                String   @id @default(uuid())
+  domain            String
+  action            String   // open_position, close_position, hold, etc.
+  target            String?
+  amountUsd         Float?
+  reasoning         String
+  confidence        Float    // 0-1
+  outcome           String?  // profit, loss, pending
+  realizedPnl       Float?
+  pnlPercent        Float?
+  skillsApplied     String   @default("[]") // JSON array of skill names
+  marketConditions  String   @default("{}") // JSON snapshot of conditions
+  decisionTimestamp DateTime @default(now())
+
+  @@index([domain])
+  @@index([outcome])
+  @@index([decisionTimestamp])
+}
+
+// Time-series performance snapshots
+model PerformanceSnapshot {
+  id            String   @id @default(uuid())
+  domain        String?  // null = total portfolio
+  totalValueUsd Float
+  numPositions  Int
+  dailyPnl      Float?
+  weeklyPnl     Float?
+  totalPnl      Float?
+  timestamp     DateTime @default(now())
+
+  @@index([domain])
+  @@index([timestamp])
+  @@index([domain, timestamp])
+}
+
+// Skill reflection metadata for tracking learning effectiveness
+model SkillReflection {
+  id                 String   @id @default(uuid())
+  skillName          String   // e.g., "avoid-low-liquidity-pools"
+  skillPath          String   // .claude/skills/xxx.md
+  domain             String
+  sourceType         String   // warning, pattern, strategy
+  triggerDecisionId  String?  // decision that triggered skill creation
+  triggerPnl         Float?   // P&L that triggered the skill
+  triggerPnlPct      Float?   // P&L % that triggered the skill
+  effectivenessScore Float?   // 0-1, updated over time
+  timesApplied       Int      @default(0)
+  successCount       Int      @default(0)
+  failureCount       Int      @default(0)
+  lastApplied        DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  metadata           String   @default("{}") // JSON for additional data
+
+  @@unique([skillName, domain])
+  @@index([domain])
+  @@index([sourceType])
+  @@index([effectivenessScore])
+}
+
+// Telegram subscribers for alerts
+model TelegramSubscriber {
+  id         String   @id @default(uuid())
+  chatId     String   @unique
+  username   String?
+  alertTypes String   @default("trade,daily_summary") // comma-separated
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Decision evaluations from judge (for learning loop)
+model DecisionEvaluation {
+  id                String   @id @default(uuid())
+  decisionId        String   // Reference to Decision
+  domain            String
+  action            String
+  target            String?
+
+  // Judge assessment
+  wasGoodDecision   Boolean  // Did the judge approve this decision?
+  qualityScore      Float?   // 0-1 quality rating
+
+  // Judge insights (the valuable part)
+  strengths         String?  // What was done well
+  weaknesses        String?  // What could be improved
+  missedFactors     String?  // Market factors that were overlooked
+  betterApproach    String?  // What would have been better
+  keyInsight        String   // The single most important learning (required)
+
+  // Categorization
+  insightType       String   // 'timing', 'sizing', 'selection', 'risk', 'market_read', 'execution'
+  applicability     String   @default("domain") // 'domain', 'cross_domain', 'general'
+
+  // Outcome tracking
+  actualOutcome     String?  // 'profit', 'loss', 'pending'
+  actualPnlPercent  Float?
+  judgeWasRight     Boolean? // Was judge's assessment validated by outcome?
+
+  createdAt         DateTime @default(now())
+
+  @@index([domain])
+  @@index([insightType])
+  @@index([wasGoodDecision])
+  @@index([createdAt])
+}
+
+// Trade execution log (historical record)
+model Trade {
+  id          String   @id @default(uuid())
+  domain      String
+  positionId  String?
+  decisionId  String?
+  action      String   // buy, sell, open, close
+  target      String
+  targetName  String?
+  side        String?
+  size        Float
+  priceUsd    Float
+  valueUsd    Float
+  fee         Float?
+  txHash      String?  // blockchain tx hash if applicable
+  executedAt  DateTime @default(now())
+  metadata    String   @default("{}")
+
+  @@index([domain])
+  @@index([positionId])
+  @@index([executedAt])
+}
