@@ -19,3 +19,9 @@ export {
   type RateLimitState,
   type RateLimitConfig,
 } from './rate-limiter.js';
+
+export {
+  ModelExecutor,
+  createModelExecutor,
+  type ModelExecutionResult,
+} from './model-executor.js';
