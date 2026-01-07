@@ -60,6 +60,17 @@ Similar skills merge at 70% similarity. Ineffective skills (< 30% success rate) 
 - **Position cap**: Max 3 per domain
 - **Confidence threshold**: Minimum 60% to execute
 - **Human approval**: Required for trades > $500
+- **Trade idempotency**: Prevents duplicate executions
+
+## Resilience
+
+Built for unreliable networks and rate limits:
+
+- **Exponential backoff**: Retries with jitter on transient failures
+- **Rate limit handling**: Respects 429 responses and Retry-After headers
+- **Model fallback**: Opus → Sonnet → Sonnet 3.5 on overload
+- **Context pruning**: Automatic summarization to prevent overflow
+- **JSONL transcripts**: Full audit trail of every decision
 
 ## Architecture
 
@@ -113,7 +124,16 @@ PAPER_TRADING=true              # Default: true
 ACTIVE_DOMAINS=dlmm,perps       # Default: all four
 CYCLE_INTERVAL_MS=1800000       # Default: 30 minutes
 CONFIDENCE_THRESHOLD=0.6        # Default: 0.6
+CLAUDE_MODEL=claude-opus-4-5-20251101  # See models below
 ```
+
+### Agent SDK Compatible Models
+
+| Model | Best For |
+|-------|----------|
+| `claude-opus-4-5-20251101` | Best quality (default) |
+| `claude-sonnet-4-20250514` | Balance of quality/speed |
+| `claude-3-5-sonnet-20241022` | Fast, cost-effective |
 
 ## Costs
 

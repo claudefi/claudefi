@@ -11,6 +11,25 @@ These are the minimum required variables to run claudefi:
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
+## Model Selection
+
+claudefi uses the Claude Agent SDK, which requires specific model versions:
+
+```bash
+# Model to use (default: claude-opus-4-5-20251101)
+CLAUDE_MODEL=claude-opus-4-5-20251101
+```
+
+### Agent SDK Compatible Models
+
+| Model | ID | Best For | Cost |
+|-------|-----|----------|------|
+| **Opus 4.5** | `claude-opus-4-5-20251101` | Best quality, complex decisions | $$$ |
+| **Sonnet 4** | `claude-sonnet-4-20250514` | Good balance of quality/speed | $$ |
+| **Sonnet 3.5** | `claude-3-5-sonnet-20241022` | Fast, cost-effective | $ |
+
+> **Note**: Only these models support extended thinking and the Agent SDK. Other models will not work.
+
 ## Trading Mode
 
 Control how trades are executed:
@@ -104,6 +123,51 @@ MAX_DRAWDOWN=0.15  # 15%
 # Per-domain drawdown limit (reduce exposure)
 DOMAIN_MAX_DRAWDOWN=0.20  # 20%
 ```
+
+## Resilience Settings
+
+Control retry behavior and fallback:
+
+```bash
+# Retry configuration for API calls
+RETRY_MAX_ATTEMPTS=3
+RETRY_BASE_DELAY_MS=300
+RETRY_MAX_DELAY_MS=30000
+
+# Context pruning thresholds
+CONTEXT_MAX_TOKENS=180000
+CONTEXT_SOFT_THRESHOLD=0.7   # Start pruning at 70%
+CONTEXT_HARD_THRESHOLD=0.9   # Aggressive prune at 90%
+
+# Model fallback (comma-separated, first is primary)
+MODEL_FALLBACK_CHAIN=claude-opus-4-5-20251101,claude-sonnet-4-20250514,claude-3-5-sonnet-20241022
+
+# Idempotency TTL (prevents duplicate trades)
+IDEMPOTENCY_TTL_MS=86400000  # 24 hours
+```
+
+### Model Fallback
+
+When the primary model is overloaded or rate-limited, claudefi automatically falls back:
+
+1. **claude-opus-4-5** (primary) - Best quality decisions
+2. **claude-sonnet-4** (fallback) - Good balance
+3. **claude-3-5-sonnet** (fallback) - Fast, reliable
+
+Each model has a 60-second cooldown after failure before retry.
+
+### Transcript Storage
+
+All conversations are logged to JSONL files for debugging and audit:
+
+```
+.claude/transcripts/
+  dlmm/2024-01-07-abc123.jsonl
+  perps/2024-01-07-def456.jsonl
+```
+
+- Files older than 24 hours are automatically compressed
+- Files older than 30 days are automatically deleted
 
 ## Notifications
 
