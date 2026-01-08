@@ -178,11 +178,9 @@ describe('Learning Pipeline E2E', () => {
       await logDecision(domain, {
         action: 'buy',
         target: 'ELECTION_MARKET',
-        targetName: 'Election Market',
         reasoning: 'Strong polling data supports YES outcome',
         confidence: 0.8,
         amountUsd: 500,
-        model: 'test-model',
       });
 
       // In real system, judge would evaluate the decision
@@ -191,11 +189,9 @@ describe('Learning Pipeline E2E', () => {
       const decisionLog = await logDecision(domain, {
         action: 'sell',
         target: 'ELECTION_MARKET',
-        targetName: 'Election Market',
         reasoning: 'Market resolved YES, closing position',
         confidence: 0.9,
         amountUsd: 700,
-        model: 'test-model',
       });
 
       // logDecision returns { id: string } | null

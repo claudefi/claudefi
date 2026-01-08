@@ -8,7 +8,7 @@
  * - drawdown-limits: Enforces global and domain drawdown limits
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { AgentDecision, Domain } from '../types/index.js';
 import {
   getDomainBalance,
@@ -173,22 +173,21 @@ describe('Hook Validation Tests', () => {
     it('should allow closing positions when at limit', async () => {
       const domain: Domain = 'spot';
 
-      // Create 3 positions
-      const positions = [];
+      // Create 3 positions (createPosition returns string ID)
+      const positionIds: string[] = [];
       for (let i = 0; i < 3; i++) {
-        const pos = await createPosition(domain, {
+        const posId = await createPosition(domain, {
           target: `TOKEN_${i}`,
-          targetName: `Token ${i}`,
           entryValueUsd: 100,
           metadata: {},
         });
-        positions.push(pos);
+        positionIds.push(posId);
       }
 
       const decision: AgentDecision = {
         domain,
         action: 'sell',
-        target: positions[0].id,
+        target: positionIds[0],
         amountUsd: 100,
         reasoning: 'Close position',
         confidence: 0.8,

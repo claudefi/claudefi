@@ -86,6 +86,7 @@ Polymarket is a prediction market where you buy YES or NO shares on event outcom
 \`\`\`
 
 **CRITICAL**: Always include \`amountUsd\` for buy/sell actions. For sells, use the position's current value.
+`;
 }
 
 function formatMarketLine(m: PolymarketMarket): string {

@@ -86,6 +86,7 @@ Memecoins are high-risk, high-reward tokens driven by community, memes, and spec
 \`\`\`
 
 **CRITICAL**: Always include \`amountUsd\` for buy/sell actions. For sells, use the position's current value.
+`;
 }
 
 function formatTokenLine(t: SpotToken): string {

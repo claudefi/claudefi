@@ -248,6 +248,7 @@ async function buildDomainContext(domain: Domain): Promise<DomainContext> {
   positionCache.update(domain, positions);
   const markets = await loadDomainMarkets(domain);
 
+  const now = new Date();
   return {
     domain,
     balance,
@@ -255,7 +256,8 @@ async function buildDomainContext(domain: Domain): Promise<DomainContext> {
     markets,
     recentDecisions,
     performanceSnapshots: [],
-    timestamp: new Date().toISOString(),
+    timestamp: now.toISOString(),
+    currentDate: now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
   };
 }
 

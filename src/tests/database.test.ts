@@ -19,7 +19,6 @@ import {
   getOpenPositions,
   createPosition,
   closePosition,
-  reopenPosition,
   logDecision,
   resetTestData,
 } from '../data/provider.js';
@@ -385,11 +384,9 @@ describe('Database Layer Tests', () => {
       const result = await logDecision(domain, {
         action: 'buy',
         target: 'ELECTION_MARKET',
-        targetName: 'Election Market',
         reasoning: 'Polling data shows strong YES trend',
         confidence: 0.85,
         amountUsd: 500,
-        model: 'claude-sonnet-4',
       });
 
       expect(result).toBeDefined();
@@ -404,11 +401,9 @@ describe('Database Layer Tests', () => {
       const result = await logDecision(domain, {
         action: 'hold',
         target: undefined,
-        targetName: undefined,
         reasoning: 'Waiting for better entry point',
         confidence: 0.6,
         amountUsd: undefined,
-        model: 'claude-sonnet-4',
       });
 
       // Hold decisions should also return an ID
@@ -424,11 +419,9 @@ describe('Database Layer Tests', () => {
       await logDecision(domain, {
         action: 'buy',
         target: 'SOL-USDC',
-        targetName: 'SOL-USDC Pool',
         reasoning: 'High APR opportunity',
         confidence: 0.75,
         amountUsd: 2000,
-        model: 'claude-sonnet-4',
       });
 
       const after = Date.now();
@@ -632,9 +625,10 @@ describe('Database Layer Tests', () => {
       const position = positions.find(p => p.id === positionId);
       expect(position).toBeDefined();
       expect(position?.target).toContain('SPECIAL');
-      // targetName may be undefined if not returned by query
-      if (position?.targetName) {
-        expect(position.targetName.toLowerCase()).toContain('special');
+      // Check metadata for targetName if stored there
+      const meta = position?.metadata as Record<string, unknown> | undefined;
+      if (meta?.targetName) {
+        expect(String(meta.targetName).toLowerCase()).toContain('special');
       }
     });
 
