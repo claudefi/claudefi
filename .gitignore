@@ -27,6 +27,13 @@ npm-debug.log*
 
 # Test
 coverage/
+stress-test-*.txt
+stress-test-*.html
+stress-test-*.json
+
+# Marketing/launch docs (not part of product)
+THREAD.md
+ARTICLE.md
 
 # Misc
 *.tgz
@@ -41,6 +48,11 @@ prisma/claudefi.db
 
 # Cache
 .cache/
+
+# Runtime data (transcripts, memory, etc)
+.claude/transcripts/
+.claude/memory/
+.claude/cache/positions.json
 
 # Secrets
 *.pem

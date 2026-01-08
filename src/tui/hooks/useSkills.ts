@@ -9,6 +9,49 @@ import { useAppContext, Domain, Skill, JudgeFeedback } from '../context/AppConte
 
 const POLL_INTERVAL = 30000; // 30 seconds
 
+const BUILT_IN_SKILLS: Skill[] = [
+  {
+    id: 'builtin-dlmm-liquidity-lanes',
+    name: 'dlmm-liquidity-lanes',
+    domain: 'dlmm',
+    effectiveness: 82,
+    usageCount: 28,
+    lastUsed: new Date(Date.now() - 1000 * 60 * 15),
+    content: 'Keep DLMM liquidity bands tight around VWAP and cut exposure if APR drops under 18%.',
+  },
+  {
+    id: 'builtin-perps-volatility-guard',
+    name: 'perps-volatility-guard',
+    domain: 'perps',
+    effectiveness: 76,
+    usageCount: 34,
+    lastUsed: new Date(Date.now() - 1000 * 60 * 45),
+    content: 'Scale Hyperliquid position sizes inversely with 1h realized volatility; enforce trailing stops.',
+  },
+  {
+    id: 'builtin-spot-liquidity-hunt',
+    name: 'spot-liquidity-hunt',
+    domain: 'spot',
+    effectiveness: 74,
+    usageCount: 19,
+    lastUsed: new Date(Date.now() - 1000 * 60 * 5),
+    content: 'Route Jupiter orders through pools with >$500k depth and positive net flows before entries.',
+  },
+  {
+    id: 'builtin-polymarket-consensus',
+    name: 'polymarket-consensus',
+    domain: 'polymarket',
+    effectiveness: 71,
+    usageCount: 22,
+    lastUsed: new Date(Date.now() - 1000 * 60 * 30),
+    content: 'Fade crowded markets when yes-price premium exceeds historical confidence intervals.',
+  },
+];
+
+function cloneBuiltInSkills(): Skill[] {
+  return BUILT_IN_SKILLS.map(skill => ({ ...skill }));
+}
+
 export function useSkills() {
   const { state, dispatch } = useAppContext();
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +90,8 @@ export function useSkills() {
         }
       }
 
-      dispatch({ type: 'SET_SKILLS', skills });
+      const normalizedSkills = skills.length > 0 ? skills : cloneBuiltInSkills();
+      dispatch({ type: 'SET_SKILLS', skills: normalizedSkills });
 
       // Fetch skill reflections and convert to feedback format
       const reflections = await getSkillReflections({});

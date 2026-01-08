@@ -95,6 +95,7 @@ export interface AppState {
   focusedPanel: number;
   modalOpen: 'config' | 'skills' | 'help' | 'onboarding' | null;
   selectedSkillId: string | null;
+  inputCapture: 'chat' | null;
 
   // Config
   mode: 'paper' | 'live';
@@ -144,7 +145,8 @@ export type AppAction =
   | { type: 'TRIGGER_REFRESH' }
   | { type: 'SET_LOADING'; key: keyof AppState['loading']; loading: boolean }
   | { type: 'SET_APP_PHASE'; phase: AppState['appPhase'] }
-  | { type: 'SET_INIT_STEP'; step: keyof InitProgress; status: InitStepStatus };
+  | { type: 'SET_INIT_STEP'; step: keyof InitProgress; status: InitStepStatus }
+  | { type: 'SET_INPUT_CAPTURE'; capture: AppState['inputCapture'] };
 
 // Initial state
 const initialAgentActivity: AgentActivity = {
@@ -170,6 +172,7 @@ export const initialState: AppState = {
   focusedPanel: 1,
   modalOpen: null,
   selectedSkillId: null,
+  inputCapture: null,
 
   // Use loaded config values
   mode: loadedConfig.mode,
@@ -291,6 +294,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         initProgress: { ...state.initProgress, [action.step]: action.status },
       };
+
+    case 'SET_INPUT_CAPTURE':
+      return { ...state, inputCapture: action.capture };
 
     default:
       return state;

@@ -8,6 +8,7 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import Spinner from 'ink-spinner';
 import { useAppContext, Domain, AgentActivity } from '../../context/AppContext.js';
+import { AgentChat } from './AgentChat.js';
 
 const DOMAIN_COLORS: Record<Domain, string> = {
   dlmm: 'blue',
@@ -73,49 +74,55 @@ export const AgentActivityPanel: React.FC = () => {
   ).length;
 
   return (
-    <Box flexDirection="column">
-      {/* Agent rows */}
-      {Object.values(agents).map((agent) => (
-        <AgentRow key={agent.domain} agent={agent} />
-      ))}
+    <Box flexDirection="column" height="100%">
+      <Box flexDirection="column" flexShrink={0}>
+        {/* Agent rows */}
+        {Object.values(agents).map((agent) => (
+          <AgentRow key={agent.domain} agent={agent} />
+        ))}
 
-      {/* Stats */}
-      <Box marginTop={1} flexDirection="column">
-        <Box>
-          <Text dimColor>Cycle: </Text>
-          <Text>{cycleNumber}</Text>
-          <Text dimColor> | Active: </Text>
-          <Text color={activeAgents > 0 ? 'green' : 'gray'}>
-            {activeAgents}/4
-          </Text>
+        {/* Stats */}
+        <Box marginTop={1} flexDirection="column">
+          <Box>
+            <Text dimColor>Cycle: </Text>
+            <Text>{cycleNumber}</Text>
+            <Text dimColor> | Active: </Text>
+            <Text color={activeAgents > 0 ? 'green' : 'gray'}>
+              {activeAgents}/4
+            </Text>
+          </Box>
+          <Box>
+            <Text dimColor>Tool Calls: </Text>
+            <Text>{totalToolCalls}</Text>
+            <Text dimColor> this cycle</Text>
+          </Box>
         </Box>
-        <Box>
-          <Text dimColor>Tool Calls: </Text>
-          <Text>{totalToolCalls}</Text>
-          <Text dimColor> this cycle</Text>
-        </Box>
+
+        {/* Last decision summary */}
+        {Object.values(agents).some((a) => a.lastDecision) && (
+          <Box marginTop={1} flexDirection="column">
+            <Text dimColor bold>Last Decisions:</Text>
+            {Object.values(agents)
+              .filter((a) => a.lastDecision)
+              .slice(0, 2)
+              .map((a) => (
+                <Box key={a.domain}>
+                  <Text color={DOMAIN_COLORS[a.domain]}>
+                    {a.domain}:
+                  </Text>
+                  <Text> {a.lastDecision?.action} </Text>
+                  <Text dimColor>
+                    ({((a.lastDecision?.confidence ?? 0) * 100).toFixed(0)}%)
+                  </Text>
+                </Box>
+              ))}
+          </Box>
+        )}
       </Box>
 
-      {/* Last decision summary */}
-      {Object.values(agents).some((a) => a.lastDecision) && (
-        <Box marginTop={1} flexDirection="column">
-          <Text dimColor bold>Last Decisions:</Text>
-          {Object.values(agents)
-            .filter((a) => a.lastDecision)
-            .slice(0, 2)
-            .map((a) => (
-              <Box key={a.domain}>
-                <Text color={DOMAIN_COLORS[a.domain]}>
-                  {a.domain}:
-                </Text>
-                <Text> {a.lastDecision?.action} </Text>
-                <Text dimColor>
-                  ({((a.lastDecision?.confidence ?? 0) * 100).toFixed(0)}%)
-                </Text>
-              </Box>
-            ))}
-        </Box>
-      )}
+      <Box marginTop={1} flexGrow={1}>
+        <AgentChat />
+      </Box>
     </Box>
   );
 };

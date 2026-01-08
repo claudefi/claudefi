@@ -251,5 +251,11 @@ Choose ONE action:
 - Size based on edge: bigger edge = larger position (max 20%)
 - Factor in time to resolution
 
+**Position Management:**
+- Let winners ride when your thesis is intact - don't exit for small gains
+- Only sell when: thesis invalidated, market moved to fair value, or need to rebalance
+- A +10-20% unrealized gain is NOT a reason to sell if edge remains
+- Prediction markets resolve binary - hold conviction positions to resolution if thesis is strong
+
 Respond with JSON: {"action", "target", "amountUsd", "reasoning", "confidence"}`;
 }

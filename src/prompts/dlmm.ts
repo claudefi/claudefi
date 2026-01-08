@@ -260,5 +260,11 @@ Choose ONE action:
 - **curve** - Wide range, lower fees, less IL (for volatile pairs)
 - **bid-ask** - Directional view on price movement
 
+**Position Management:**
+- Let profitable positions compound - don't exit just because you're up
+- Only remove liquidity when: IL exceeds cumulative fees, TVL drops 50%+, or significantly better opportunity
+- A position earning +5-15% should be HELD to continue earning fees
+- Don't churn positions - transaction fees and IL from repositioning eat profits
+
 Respond with JSON: {"action", "target", "amountUsd", "strategy", "reasoning", "confidence"}`;
 }

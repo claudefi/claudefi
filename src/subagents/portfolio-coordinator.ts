@@ -282,7 +282,7 @@ function generateDomainGuidance(
   // Perps guidance
   const perpsPerf = perfMap.get('perps')!;
   if (riskLevel === 'conservative') {
-    guidance.perps = 'Conservative mode: Max 3x leverage, tighter stop losses (3%), avoid overnight positions.';
+    guidance.perps = 'Conservative mode: Max 3x leverage, stop losses at -10%, but let winners run - don\'t exit profitable positions early.';
   } else if (marketSummary.btcChange24h > 5) {
     guidance.perps = 'Strong BTC momentum. Look for continuation longs with momentum confirmation.';
   } else if (marketSummary.btcChange24h < -5) {
@@ -298,11 +298,11 @@ function generateDomainGuidance(
   // Spot guidance
   const spotPerf = perfMap.get('spot')!;
   if (riskLevel === 'aggressive' && spotPerf.recentTrend === 'improving') {
-    guidance.spot = 'Aggressive mode with improving spot performance. Increase allocation to high-momentum tokens.';
+    guidance.spot = 'Aggressive mode with improving spot performance. Increase allocation to high-momentum tokens. Let winners run to +50%+ before taking profits.';
   } else if (marketSummary.solChange24h < -5) {
-    guidance.spot = 'SOL ecosystem weak. Reduce memecoin exposure, focus on established tokens only.';
+    guidance.spot = 'SOL ecosystem weak. Reduce memecoin exposure, focus on established tokens only. But don\'t panic-sell existing winners.';
   } else {
-    guidance.spot = 'Standard spot operation. Quick entries/exits, avoid overnight holds.';
+    guidance.spot = 'Standard spot operation. Aim for larger wins (+30-50%) rather than quick small exits. Only cut losers fast, let winners run.';
   }
 
   return guidance;

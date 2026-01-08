@@ -230,11 +230,17 @@ Choose ONE action:
 2. **sell** - Exit existing position
 3. **hold** - No compelling opportunity
 
-**Risk Rules:**
+**Risk Management:**
 - Max 20% of AUM per token
 - Require liquidity > $50k for entry
-- Set mental stop-loss (exit at -20%)
-- Take profits on 2x gains
+- Stop-loss: -15% to -25% depending on conviction
+- Profit targets: Let winners run! Consider partial sells at +50%, full exit at +100%+
+- Small gains (+5-15%) are NOT profit targets - these are noise, not signal
+
+**Avoid Over-Trading:**
+- Don't exit winners early just because they're green
+- A +10% gain with strong momentum should be HELD, not sold
+- Only take profits when: momentum fading, volume dying, or target hit
 
 Respond with JSON: {"action", "target", "amountUsd", "reasoning", "confidence"}`;
 }

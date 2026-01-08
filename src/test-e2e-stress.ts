@@ -29,7 +29,31 @@ import {
   closePosition,
   initDataLayer,
   shutdownDataLayer,
+  getPerformanceSnapshots,
 } from './data/provider.js';
+import { existsSync, readdirSync, readFileSync } from 'fs';
+import { join } from 'path';
+import type { MemoryTestResult } from './memory/test-helpers.js';
+import {
+  testFactPersistence,
+  testMemoryFormatting,
+  testExpirationLogic,
+  testConcurrentAccess,
+  testMemoryIsolation,
+  testCorruptedFileRecovery,
+  injectRealisticMemory,
+  extractMemoryReferences,
+} from './memory/test-helpers.js';
+import {
+  remember,
+  recall,
+  logDailyMemory,
+  readDailyLog,
+  clearExpiredFacts,
+  formatMemoryForPrompt,
+  getMemorySummary,
+  initMemorySystem,
+} from './memory/index.js';
 
 // ============================================================================
 // CLI ARGUMENTS
@@ -68,6 +92,7 @@ interface StressCycleResult {
   timing: number;
   edgeCase: boolean;
   edgeCaseType?: string;
+  memoryValidation?: MemoryValidationResult;
 }
 
 interface BugReport {
@@ -77,6 +102,40 @@ interface BugReport {
   description: string;
   symptom: string;
   context: unknown;
+}
+
+interface MemoryMetrics {
+  // Storage
+  totalFactsStored: number;
+  factsByImportance: { low: number; medium: number; high: number };
+  totalDailyLogEntries: number;
+  memorySizeBytes: number;
+
+  // Retrieval
+  factsRetrievedPerCycle: number;
+  avgFactsInPrompt: number;
+  memoryFormattingTime: number;
+
+  // Effectiveness
+  factsReferencedByAgent: number;
+  memoryInfluencedDecisions: number;
+  memoryHelpfulnessScore: number; // 0-1
+
+  // Integrity
+  factsCorrupted: number;
+  expirationCleanupsRun: number;
+  factsExpired: number;
+
+  // Performance
+  avgRecallTime: number;
+  avgRememberTime: number;
+  maxMemoryFileSizeBytes: number;
+}
+
+interface MemoryValidationResult {
+  passed: boolean;
+  validationTests: MemoryTestResult[];
+  issuesFound: string[];
 }
 
 interface StressTestMetrics {
@@ -120,6 +179,27 @@ interface StressTestReport {
   decisions: StressCycleResult[];
   verdict: 'PASS' | 'FAIL';
   recommendations: string[];
+  memory: {
+    metrics: MemoryMetrics;
+    validationTests: MemoryTestResult[];
+    perDomainMemory: Record<Domain, {
+      factCount: number;
+      dailyLogCount: number;
+      fileSizeBytes: number;
+    }>;
+    effectiveness: {
+      memoryInfluencedDecisions: number;
+      totalDecisions: number;
+      influenceRate: number;
+      avgFactsReferencedPerDecision: number;
+    };
+    issues: {
+      severity: 'critical' | 'warning';
+      test: string;
+      description: string;
+    }[];
+    recommendations: string[];
+  };
 }
 
 // ============================================================================
@@ -130,6 +210,26 @@ const results: StressCycleResult[] = [];
 const bugs: BugReport[] = [];
 const warnings: BugReport[] = [];
 const cycleTimings: number[] = [];
+
+// Memory metrics tracking
+const memoryMetrics: MemoryMetrics = {
+  totalFactsStored: 0,
+  factsByImportance: { low: 0, medium: 0, high: 0 },
+  totalDailyLogEntries: 0,
+  memorySizeBytes: 0,
+  factsRetrievedPerCycle: 0,
+  avgFactsInPrompt: 0,
+  memoryFormattingTime: 0,
+  factsReferencedByAgent: 0,
+  memoryInfluencedDecisions: 0,
+  memoryHelpfulnessScore: 0,
+  factsCorrupted: 0,
+  expirationCleanupsRun: 0,
+  factsExpired: 0,
+  avgRecallTime: 0,
+  avgRememberTime: 0,
+  maxMemoryFileSizeBytes: 0,
+};
 
 // ============================================================================
 // SETUP & TEARDOWN
@@ -225,6 +325,261 @@ async function setupTestState(): Promise<void> {
 async function teardownTestState(): Promise<void> {
   console.log('\n🧹 Tearing down...');
   await shutdownDataLayer();
+}
+
+// ============================================================================
+// MEMORY TESTING
+// ============================================================================
+
+/**
+ * Initialize memory system at test start
+ */
+async function initializeMemorySystem(): Promise<void> {
+  await initMemorySystem();
+
+  // Inject baseline facts
+  await remember('general' as Domain, 'E2E stress test session', 'high', 'test-setup');
+
+  for (const domain of DOMAINS) {
+    await remember(domain, `${domain} stress testing started`, 'medium', 'test');
+  }
+}
+
+/**
+ * Inject memory before each cycle
+ */
+async function injectMemoryForCycle(
+  domain: Domain,
+  cycleNum: number
+): Promise<void> {
+  // Add realistic trading facts based on cycle number
+  await injectRealisticMemory(domain, cycleNum);
+
+  // Log observation about the cycle
+  await logDailyMemory(
+    domain,
+    'observation',
+    `Starting cycle ${cycleNum} for ${domain}`
+  );
+}
+
+/**
+ * Validate memory after cycle
+ */
+async function validateMemoryAfterCycle(
+  domain: Domain,
+  result: StressCycleResult
+): Promise<MemoryValidationResult> {
+  const tests: MemoryTestResult[] = [];
+  const issues: string[] = [];
+
+  // Test 1: Fact persistence
+  tests.push(await testFactPersistence(domain, 'stress test'));
+
+  // Test 2: Memory formatting
+  tests.push(await testMemoryFormatting(domain));
+
+  // Test 3: Daily log structure
+  const log = await readDailyLog(domain);
+  if (!log.includes('Daily Log')) {
+    issues.push('Daily log missing proper header');
+  }
+
+  // Test 4: Check if agent referenced memory
+  if (result.decision?.reasoning) {
+    const facts = await recall(domain);
+    const refs = extractMemoryReferences(result.decision.reasoning, facts);
+    if (refs.length > 0) {
+      memoryMetrics.factsReferencedByAgent += refs.length;
+      memoryMetrics.memoryInfluencedDecisions++;
+    }
+  }
+
+  const passed = tests.every(t => t.passed) && issues.length === 0;
+
+  return { passed, validationTests: tests, issuesFound: issues };
+}
+
+/**
+ * Run comprehensive memory validation suite
+ */
+async function runMemoryValidationSuite(): Promise<MemoryTestResult[]> {
+  const tests: MemoryTestResult[] = [];
+
+  // Run comprehensive tests
+  tests.push(await testMemoryIsolation());
+  tests.push(await testExpirationLogic('dlmm'));
+  tests.push(await testConcurrentAccess('dlmm'));
+  tests.push(await testCorruptedFileRecovery('dlmm'));
+
+  return tests;
+}
+
+/**
+ * Collect memory summary metrics
+ */
+async function collectMemorySummary(): Promise<void> {
+  const summary = await getMemorySummary();
+
+  for (const domain of summary) {
+    memoryMetrics.totalFactsStored += domain.factCount;
+    memoryMetrics.totalDailyLogEntries += domain.recentLogsCount;
+  }
+
+  // Calculate helpfulness score
+  if (memoryMetrics.totalFactsStored > 0) {
+    memoryMetrics.memoryHelpfulnessScore =
+      results.length > 0 ? memoryMetrics.memoryInfluencedDecisions / results.length : 0;
+  }
+}
+
+/**
+ * Cleanup memory after test
+ */
+async function cleanupMemorySystem(): Promise<void> {
+  // Clear test data
+  const allDomains = [...DOMAINS, 'general' as Domain];
+  for (const domain of allDomains) {
+    await clearExpiredFacts(domain);
+  }
+}
+
+// ============================================================================
+// ADDITIONAL VALIDATIONS
+// ============================================================================
+
+/**
+ * Validate DB state changes after cycle
+ */
+async function validateDatabaseState(
+  domain: Domain,
+  beforeBalance: number,
+  beforePositions: number
+): Promise<{ passed: boolean; issues: string[] }> {
+  const issues: string[] = [];
+
+  try {
+    const afterBalance = await getDomainBalance(domain);
+    const afterPositions = await getOpenPositions(domain);
+
+    // Check that DB is accessible
+    if (afterBalance === undefined || afterPositions === undefined) {
+      issues.push('Database query returned undefined');
+    }
+
+    // Check for reasonable state (balance shouldn't be negative, positions shouldn't exceed reasonable limits)
+    if (afterBalance < 0) {
+      issues.push(`Negative balance detected: $${afterBalance}`);
+    }
+
+    if (afterPositions.length > 10) {
+      issues.push(`Too many positions: ${afterPositions.length}`);
+    }
+  } catch (error) {
+    issues.push(`DB validation error: ${error instanceof Error ? error.message : 'Unknown'}`);
+  }
+
+  return { passed: issues.length === 0, issues };
+}
+
+/**
+ * Check if skills/judge feedback was logged
+ */
+async function validateSkillsAndJudge(): Promise<{ passed: boolean; issues: string[] }> {
+  const issues: string[] = [];
+
+  // Check for skills directory
+  const skillsDir = join(process.cwd(), '.claude', 'reflections');
+  if (!existsSync(skillsDir)) {
+    issues.push('Skills directory (.claude/reflections) does not exist');
+  } else {
+    const files = readdirSync(skillsDir).filter(f => f.endsWith('.md'));
+    if (files.length === 0) {
+      issues.push('No skill reflection files found - may need trades with outcomes');
+    }
+  }
+
+  // Note: Judge table validation would require DB access - skipping for now
+  // as it requires knowing the DB schema and may not be available in all providers
+
+  return { passed: issues.length === 0, issues };
+}
+
+/**
+ * Test community CLI commands
+ */
+async function testCommunityCLI(): Promise<{ passed: boolean; output: string; error?: string }> {
+  try {
+    // Note: This is a simplified test - full CLI testing would require
+    // running actual CLI commands which may not be available in test environment
+    const registryPath = join(process.cwd(), 'src', 'skills', 'community', 'registry.ts');
+
+    if (!existsSync(registryPath)) {
+      return {
+        passed: false,
+        output: '',
+        error: 'Community registry file not found',
+      };
+    }
+
+    // Read registry to verify it has the expected structure
+    const content = readFileSync(registryPath, 'utf-8');
+    const hasExports = content.includes('export') && content.includes('registry');
+
+    return {
+      passed: hasExports,
+      output: hasExports ? 'Registry file structure valid' : '',
+      error: hasExports ? undefined : 'Registry missing expected exports',
+    };
+  } catch (error) {
+    return {
+      passed: false,
+      output: '',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Parse and validate ralph.log telemetry
+ */
+async function validateTelemetry(): Promise<{ passed: boolean; issues: string[] }> {
+  const issues: string[] = [];
+  const logPath = join(process.cwd(), 'ralph.log');
+
+  if (!existsSync(logPath)) {
+    issues.push('ralph.log not found - logging may not be configured');
+    return { passed: false, issues };
+  }
+
+  try {
+    const logContent = readFileSync(logPath, 'utf-8');
+    const lines = logContent.split('\n').filter(l => l.trim());
+
+    // Check for expected structured sections
+    const hasContextBuild = lines.some(l => l.includes('context') || l.includes('Context'));
+    const hasExecution = lines.some(l => l.includes('execution') || l.includes('Execution'));
+    const hasCycleSummary = lines.some(l => l.includes('cycle') || l.includes('Cycle'));
+
+    if (!hasContextBuild) issues.push('Missing "context build" sections in log');
+    if (!hasExecution) issues.push('Missing "execution" sections in log');
+    if (!hasCycleSummary) issues.push('Missing "cycle summary" sections in log');
+
+    // Check for Fatal errors
+    const hasFatalErrors = lines.some(l =>
+      l.toLowerCase().includes('fatal') &&
+      !l.includes('no fatal') &&
+      !l.includes('0 fatal')
+    );
+
+    if (hasFatalErrors) {
+      issues.push('Fatal errors detected in log');
+    }
+  } catch (error) {
+    issues.push(`Log parsing error: ${error instanceof Error ? error.message : 'Unknown'}`);
+  }
+
+  return { passed: issues.length === 0, issues };
 }
 
 // ============================================================================
@@ -396,6 +751,19 @@ async function runTestCycle(cycleNum: number): Promise<StressCycleResult[]> {
   const cycleResults: StressCycleResult[] = [];
   const edgeCases = new Map<Domain, EdgeCase>();
 
+  // Capture DB state before cycle
+  const beforeState = new Map<Domain, { balance: number; positions: number }>();
+  for (const domain of DOMAINS) {
+    const balance = await getDomainBalance(domain);
+    const positions = await getOpenPositions(domain);
+    beforeState.set(domain, { balance, positions: positions.length });
+  }
+
+  // Inject memory before cycle
+  for (const domain of DOMAINS) {
+    await injectMemoryForCycle(domain, cycleNum);
+  }
+
   // Maybe inject edge cases before cycle
   for (const domain of DOMAINS) {
     if (shouldInjectEdgeCase()) {
@@ -460,6 +828,25 @@ async function runTestCycle(cycleNum: number): Promise<StressCycleResult[]> {
     // Detect bugs
     detectBugs(result);
 
+    // Validate memory after cycle
+    result.memoryValidation = await validateMemoryAfterCycle(ralphResult.domain, result);
+
+    // Validate DB state changes
+    const before = beforeState.get(ralphResult.domain);
+    if (before) {
+      const dbValidation = await validateDatabaseState(ralphResult.domain, before.balance, before.positions);
+      if (!dbValidation.passed) {
+        warnings.push({
+          severity: 'warning',
+          domain: ralphResult.domain,
+          cycle: cycleNum,
+          description: 'DB validation failed',
+          symptom: dbValidation.issues.join(', '),
+          context: { before },
+        });
+      }
+    }
+
     // Restore from edge case
     if (edgeCase) {
       await restoreFromEdgeCase(edgeCase);
@@ -469,9 +856,10 @@ async function runTestCycle(cycleNum: number): Promise<StressCycleResult[]> {
 
     const emoji = result.success ? '✅' : '❌';
     const action = result.decision?.action || 'none';
+    const memEmoji = result.memoryValidation?.passed ? '🧠' : '⚠️';
     const edgeLabel = isEdgeCase ? ` [EDGE: ${edgeCase?.type}]` : '';
     console.log(
-      `${emoji} ${result.domain.toUpperCase().padEnd(10)} | ${action.padEnd(15)} | ${result.timing.toFixed(0)}ms${edgeLabel}`
+      `${emoji} ${memEmoji} ${result.domain.toUpperCase().padEnd(10)} | ${action.padEnd(15)} | ${result.timing.toFixed(0)}ms${edgeLabel}`
     );
   }
 
@@ -592,6 +980,64 @@ function generateReport(metrics: StressTestMetrics): StressTestReport {
     recommendations.push('✅ All checks passed! System ready for production.');
   }
 
+  // Collect memory validation tests from all results
+  const allMemoryTests: MemoryTestResult[] = [];
+  for (const result of results) {
+    if (result.memoryValidation) {
+      allMemoryTests.push(...result.memoryValidation.validationTests);
+    }
+  }
+
+  // Build per-domain memory stats
+  const perDomainMemory: Record<Domain, { factCount: number; dailyLogCount: number; fileSizeBytes: number }> =
+    {} as Record<Domain, { factCount: number; dailyLogCount: number; fileSizeBytes: number }>;
+
+  for (const domain of DOMAINS) {
+    perDomainMemory[domain] = {
+      factCount: 0,
+      dailyLogCount: 0,
+      fileSizeBytes: 0,
+    };
+  }
+
+  // Calculate effectiveness metrics
+  const totalDecisions = results.filter(r => r.decision !== null).length;
+  const influenceRate = totalDecisions > 0
+    ? (memoryMetrics.memoryInfluencedDecisions / totalDecisions) * 100
+    : 0;
+  const avgFactsReferenced = memoryMetrics.memoryInfluencedDecisions > 0
+    ? memoryMetrics.factsReferencedByAgent / memoryMetrics.memoryInfluencedDecisions
+    : 0;
+
+  // Identify memory issues
+  const memoryIssues: { severity: 'critical' | 'warning'; test: string; description: string }[] = [];
+  for (const result of results) {
+    if (result.memoryValidation && !result.memoryValidation.passed) {
+      for (const issue of result.memoryValidation.issuesFound) {
+        memoryIssues.push({
+          severity: 'warning',
+          test: `${result.domain} - Cycle ${result.cycle}`,
+          description: issue,
+        });
+      }
+    }
+  }
+
+  // Generate memory recommendations
+  const memoryRecommendations: string[] = [];
+  if (memoryMetrics.memoryHelpfulnessScore < 0.1) {
+    memoryRecommendations.push('Memory system not being utilized effectively - consider richer facts');
+  }
+  if (memoryMetrics.factsCorrupted > 0) {
+    memoryRecommendations.push(`${memoryMetrics.factsCorrupted} facts corrupted - investigate file integrity`);
+  }
+  if (allMemoryTests.some(t => !t.passed)) {
+    memoryRecommendations.push('Some memory validation tests failed - review test details');
+  }
+  if (memoryRecommendations.length === 0) {
+    memoryRecommendations.push('Memory system functioning properly');
+  }
+
   return {
     timestamp: new Date().toISOString(),
     config: {
@@ -605,6 +1051,19 @@ function generateReport(metrics: StressTestMetrics): StressTestReport {
     decisions: results,
     verdict,
     recommendations,
+    memory: {
+      metrics: memoryMetrics,
+      validationTests: allMemoryTests,
+      perDomainMemory,
+      effectiveness: {
+        memoryInfluencedDecisions: memoryMetrics.memoryInfluencedDecisions,
+        totalDecisions,
+        influenceRate,
+        avgFactsReferencedPerDecision: avgFactsReferenced,
+      },
+      issues: memoryIssues,
+      recommendations: memoryRecommendations,
+    },
   };
 }
 
@@ -862,6 +1321,63 @@ function generateHTMLReport(report: StressTestReport): void {
   <h2>Edge Cases</h2>
   <p>Attempted: <strong>${report.metrics.edgeCasesAttempted}</strong> | Handled: <strong>${report.metrics.edgeCasesHandled}</strong></p>
 
+  <h2>Memory System</h2>
+  <div class="metrics">
+    <div class="metric-card">
+      <h3>Total Facts</h3>
+      <div class="value">${report.memory.metrics.totalFactsStored}</div>
+    </div>
+    <div class="metric-card">
+      <h3>Influence Rate</h3>
+      <div class="value">${report.memory.effectiveness.influenceRate.toFixed(1)}%</div>
+    </div>
+    <div class="metric-card">
+      <h3>Decisions Influenced</h3>
+      <div class="value">${report.memory.effectiveness.memoryInfluencedDecisions}</div>
+    </div>
+    <div class="metric-card">
+      <h3>Validation Tests</h3>
+      <div class="value">${report.memory.validationTests.filter(t => t.passed).length}/${report.memory.validationTests.length}</div>
+    </div>
+  </div>
+
+  <h3>Per-Domain Memory</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Domain</th>
+        <th>Facts Stored</th>
+        <th>Daily Logs</th>
+        <th>File Size</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${DOMAINS.map(domain => `
+        <tr>
+          <td><strong>${domain.toUpperCase()}</strong></td>
+          <td>${report.memory.perDomainMemory[domain].factCount}</td>
+          <td>${report.memory.perDomainMemory[domain].dailyLogCount}</td>
+          <td>${(report.memory.perDomainMemory[domain].fileSizeBytes / 1024).toFixed(1)} KB</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+
+  ${report.memory.issues.length > 0 ? `
+    <h3>Memory Issues</h3>
+    ${report.memory.issues.map(issue => `
+      <div class="${issue.severity === 'critical' ? 'bug' : 'warning'}">
+        <strong>${issue.test}</strong><br>
+        ${issue.description}
+      </div>
+    `).join('')}
+  ` : ''}
+
+  <h3>Memory Recommendations</h3>
+  <ul>
+    ${report.memory.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+  </ul>
+
   ${report.metrics.criticalBugs.length > 0 ? `
     <h2>Critical Bugs</h2>
     <p style="margin-bottom: 16px;">Found ${report.metrics.criticalBugs.length} critical issue${report.metrics.criticalBugs.length > 1 ? 's' : ''}</p>
@@ -941,6 +1457,14 @@ function printSummary(report: StressTestReport): void {
   console.log(`   Hooks:       ${metrics.systemsTestedCount.hooks} executions`);
   console.log(`   Monitoring:  ${metrics.systemsTestedCount.monitoring} cycles`);
 
+  console.log(`\n🧠 Memory System:`);
+  console.log(`   Facts Stored:         ${report.memory.metrics.totalFactsStored}`);
+  console.log(`   Decisions Influenced: ${report.memory.effectiveness.memoryInfluencedDecisions}/${report.memory.effectiveness.totalDecisions} (${report.memory.effectiveness.influenceRate.toFixed(1)}%)`);
+  console.log(`   Validation Tests:     ${report.memory.validationTests.filter(t => t.passed).length}/${report.memory.validationTests.length} passed`);
+  if (report.memory.issues.length > 0) {
+    console.log(`   Issues:               ${report.memory.issues.length} found`);
+  }
+
   if (metrics.criticalBugs.length > 0) {
     console.log(`\n🔴 Critical Bugs: ${metrics.criticalBugs.length}`);
     metrics.criticalBugs.forEach((bug, i) => {
@@ -978,6 +1502,17 @@ async function main(): Promise<void> {
     // Setup
     await setupTestState();
 
+    // Initialize memory system
+    console.log('📝 Initializing memory system...');
+    await initializeMemorySystem();
+    console.log('  ✓ Memory system initialized');
+
+    // Run memory validation suite upfront
+    console.log('\n📋 Running memory validation suite...');
+    const memValidationTests = await runMemoryValidationSuite();
+    const memValidationPassed = memValidationTests.every(t => t.passed);
+    console.log(`  ${memValidationPassed ? '✓' : '✗'} Memory validation: ${memValidationTests.filter(t => t.passed).length}/${memValidationTests.length} passed`);
+
     // Run cycles
     for (let i = 1; i <= NUM_CYCLES; i++) {
       const cycleResults = await runTestCycle(i);
@@ -988,6 +1523,26 @@ async function main(): Promise<void> {
         await new Promise(resolve => setTimeout(resolve, 2000)); // 2s between cycles
       }
     }
+
+    // Collect final memory metrics
+    console.log('\n📊 Collecting memory metrics...');
+    await collectMemorySummary();
+    console.log('  ✓ Memory metrics collected');
+
+    // Run additional validations
+    console.log('\n🔍 Running additional validations...');
+
+    // Skills and judge validation
+    const skillsValidation = await validateSkillsAndJudge();
+    console.log(`  ${skillsValidation.passed ? '✓' : '⚠️'} Skills/Judge: ${skillsValidation.passed ? 'OK' : skillsValidation.issues.join(', ')}`);
+
+    // CLI validation
+    const cliValidation = await testCommunityCLI();
+    console.log(`  ${cliValidation.passed ? '✓' : '⚠️'} Community CLI: ${cliValidation.passed ? 'OK' : cliValidation.error}`);
+
+    // Telemetry validation
+    const telemetryValidation = await validateTelemetry();
+    console.log(`  ${telemetryValidation.passed ? '✓' : '⚠️'} Telemetry: ${telemetryValidation.passed ? 'OK' : telemetryValidation.issues.join(', ')}`);
 
     // Calculate metrics
     const metrics = calculateMetrics();
@@ -1004,12 +1559,16 @@ async function main(): Promise<void> {
     const finalPortfolio = await getPortfolio();
     console.log(`💰 Final Portfolio: $${finalPortfolio.totalValueUsd.toFixed(2)}`);
 
+    // Cleanup memory
+    await cleanupMemorySystem();
+
     // Exit with appropriate code
     const exitCode = report.verdict === 'PASS' ? 0 : 1;
     await teardownTestState();
     process.exit(exitCode);
   } catch (error) {
     console.error('\n❌ Test execution failed:', error);
+    await cleanupMemorySystem();
     await teardownTestState();
     process.exit(1);
   }

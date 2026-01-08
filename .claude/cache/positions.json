@@ -8,7 +8,7 @@
         "targetName": "SUI",
         "entryValueUsd": 350,
         "currentValueUsd": 350,
-        "status": "open",
+        "status": "closed",
         "side": null,
         "size": 0,
         "entryPrice": 0,
@@ -22,8 +22,8 @@
         }
       },
       "partialHistory": [],
-      "closed": false,
-      "updatedAt": "2026-01-08T10:57:23.036Z"
+      "closed": true,
+      "updatedAt": "2026-01-08T15:06:54.633Z"
     },
     "f4f4d5dd-3de0-4ef7-92bf-0a9a5e5f2af6": {
       "position": {
@@ -33,7 +33,7 @@
         "targetName": "ENA",
         "entryValueUsd": 300,
         "currentValueUsd": 300,
-        "status": "open",
+        "status": "closed",
         "side": null,
         "size": 0,
         "entryPrice": 0,
@@ -47,8 +47,8 @@
         }
       },
       "partialHistory": [],
-      "closed": false,
-      "updatedAt": "2026-01-08T10:57:23.036Z"
+      "closed": true,
+      "updatedAt": "2026-01-08T15:06:54.633Z"
     },
     "041a513e-629d-4587-b9d8-5b829cfacffb": {
       "position": {
@@ -58,7 +58,7 @@
         "targetName": "SOL-PERP",
         "entryValueUsd": 200,
         "currentValueUsd": 200,
-        "status": "open",
+        "status": "closed",
         "side": "LONG",
         "size": 0,
         "entryPrice": 100,
@@ -76,8 +76,8 @@
         }
       },
       "partialHistory": [],
-      "closed": false,
-      "updatedAt": "2026-01-08T10:57:23.036Z"
+      "closed": true,
+      "updatedAt": "2026-01-08T15:06:54.633Z"
     },
     "6d9fd368-44c1-435e-8585-a03e3f1f3280": {
       "position": {
@@ -114,6 +114,144 @@
       ],
       "closed": true,
       "updatedAt": "2026-01-08T10:56:22.904Z"
+    },
+    "ce828ba3-3600-4b27-ad35-5a0a4e3e59c1": {
+      "position": {
+        "id": "ce828ba3-3600-4b27-ad35-5a0a4e3e59c1",
+        "domain": "perps",
+        "target": "SOL-PERP",
+        "targetName": "SOL-PERP",
+        "entryValueUsd": 200,
+        "currentValueUsd": 0,
+        "status": "closed",
+        "side": "LONG",
+        "size": 0,
+        "entryPrice": 100,
+        "currentPrice": 100,
+        "openedAt": "2026-01-08T11:23:51.699+00:00",
+        "closedAt": "2026-01-08T11:24:39.417Z",
+        "realizedPnl": 0,
+        "metadata": {
+          "side": "LONG",
+          "symbol": "SOL-PERP",
+          "leverage": 5,
+          "entryPrice": 100,
+          "currentPrice": 115,
+          "unrealizedPnl": 30
+        }
+      },
+      "partialHistory": [
+        {
+          "timestamp": "2026-01-08T11:24:39.267Z",
+          "proportion": 1,
+          "realizedValueUsd": 200,
+          "realizedPnlUsd": 0
+        }
+      ],
+      "closed": true,
+      "updatedAt": "2026-01-08T11:24:39.417Z"
+    },
+    "13cc4207-3c26-40a1-baa8-7e10010b145d": {
+      "position": {
+        "id": "13cc4207-3c26-40a1-baa8-7e10010b145d",
+        "domain": "perps",
+        "target": "SUI",
+        "targetName": "SUI-PERP",
+        "entryValueUsd": 199,
+        "currentValueUsd": 203.24,
+        "status": "open",
+        "side": "long",
+        "size": 89.84,
+        "entryPrice": 4.43,
+        "currentPrice": 4.59,
+        "openedAt": "2026-01-05T23:15:09.31+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "symbol": "SUI",
+          "exchange": "hyperliquid",
+          "leverage": 2,
+          "liquidationPrice": 2.44
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.073Z"
+    },
+    "cc5be8c3-f37d-4a6d-9de6-ab10f6374bea": {
+      "position": {
+        "id": "cc5be8c3-f37d-4a6d-9de6-ab10f6374bea",
+        "domain": "perps",
+        "target": "UNI",
+        "targetName": "UNI",
+        "entryValueUsd": 60,
+        "currentValueUsd": 60,
+        "status": "closed",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T16:13:45.303+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "symbol": "UNI",
+          "leverage": 3
+        }
+      },
+      "partialHistory": [],
+      "closed": true,
+      "updatedAt": "2026-01-08T17:45:59.305Z"
+    },
+    "74666c5c-fe7a-45cd-be4b-aba92a2026ea": {
+      "position": {
+        "id": "74666c5c-fe7a-45cd-be4b-aba92a2026ea",
+        "domain": "perps",
+        "target": "SOL",
+        "targetName": "SOL",
+        "entryValueUsd": 60,
+        "currentValueUsd": 60,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T16:45:08.262+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "symbol": "SOL",
+          "leverage": 3
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.073Z"
+    },
+    "fd5e8ec1-916f-4c98-ae43-c1802566e997": {
+      "position": {
+        "id": "fd5e8ec1-916f-4c98-ae43-c1802566e997",
+        "domain": "perps",
+        "target": "TAO",
+        "targetName": "TAO",
+        "entryValueUsd": 60,
+        "currentValueUsd": 60,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T17:47:16.703+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "symbol": "TAO",
+          "leverage": 3
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.073Z"
     }
   },
   "dlmm": {
@@ -125,7 +263,7 @@
         "targetName": "SOL-USDC (100 bps)",
         "entryValueUsd": 150,
         "currentValueUsd": 150,
-        "status": "open",
+        "status": "closed",
         "side": null,
         "size": 0,
         "entryPrice": 0,
@@ -142,8 +280,8 @@
         }
       },
       "partialHistory": [],
-      "closed": false,
-      "updatedAt": "2026-01-08T10:57:23.032Z"
+      "closed": true,
+      "updatedAt": "2026-01-08T15:06:54.563Z"
     },
     "5c5b4a85-5acb-4da8-bb50-71347273c515": {
       "position": {
@@ -153,7 +291,7 @@
         "targetName": "SOL-USDC (100 bps)",
         "entryValueUsd": 150,
         "currentValueUsd": 150,
-        "status": "open",
+        "status": "closed",
         "side": null,
         "size": 0,
         "entryPrice": 0,
@@ -170,8 +308,239 @@
         }
       },
       "partialHistory": [],
+      "closed": true,
+      "updatedAt": "2026-01-08T15:06:54.563Z"
+    },
+    "278a45f8-f6fa-4613-954c-bcd9e42599af": {
+      "position": {
+        "id": "278a45f8-f6fa-4613-954c-bcd9e42599af",
+        "domain": "dlmm",
+        "target": "SOL-USDC-100",
+        "targetName": "SOL-USDC (100 bps)",
+        "entryValueUsd": 150,
+        "currentValueUsd": 150,
+        "status": "closed",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T11:23:51.531+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "tokenX": "SOL",
+          "tokenY": "USDC",
+          "strategy": "spot",
+          "feesEarned": 15,
+          "poolAddress": "TEST_POOL_SOL_USDC"
+        }
+      },
+      "partialHistory": [],
+      "closed": true,
+      "updatedAt": "2026-01-08T15:06:54.563Z"
+    },
+    "2d08197d-b24b-45a3-99f5-5fba2a7f2e65": {
+      "position": {
+        "id": "2d08197d-b24b-45a3-99f5-5fba2a7f2e65",
+        "domain": "dlmm",
+        "target": "DdMA1cHcHEqYfttc1z1sJEY978CcU1pyjNuTWTNmdvzU",
+        "targetName": "PENGU-USDC",
+        "entryValueUsd": 383,
+        "currentValueUsd": 386.15,
+        "status": "open",
+        "side": "spot",
+        "size": 3.83,
+        "entryPrice": 100,
+        "currentPrice": 0,
+        "openedAt": "2026-01-05T21:00:39.396+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "apr": 27.68,
+          "symbol": "PENGU",
+          "binRange": 28,
+          "strategy": "bid_ask",
+          "poolAddress": "DdMA1cHcHEqYfttc1z1sJEY978CcU1pyjNuTWTNmdvzU"
+        }
+      },
+      "partialHistory": [],
       "closed": false,
-      "updatedAt": "2026-01-08T10:57:23.032Z"
+      "updatedAt": "2026-01-08T21:34:00.306Z"
+    },
+    "b7ca5e7f-05f0-4310-ab59-78b28a8fb09a": {
+      "position": {
+        "id": "b7ca5e7f-05f0-4310-ab59-78b28a8fb09a",
+        "domain": "dlmm",
+        "target": "BVRbyLjjfSBcoyiYFuxbgKYnWuiFaF9CSXEa5vdSZ9Hh",
+        "targetName": "BVRbyLjjfSBcoyiYFuxbgKYnWuiFaF9CSXEa5vdSZ9Hh",
+        "entryValueUsd": 100,
+        "currentValueUsd": 100,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T15:38:35.745+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "strategy": "curve",
+          "poolAddress": "BVRbyLjjfSBcoyiYFuxbgKYnWuiFaF9CSXEa5vdSZ9Hh"
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.306Z"
+    },
+    "218e4fd4-9b73-47ef-8701-165038d14cdf": {
+      "position": {
+        "id": "218e4fd4-9b73-47ef-8701-165038d14cdf",
+        "domain": "dlmm",
+        "target": "9d9mb8kooFfaD3SctgZtkxQypkshx6ezhbKio89ixyy2",
+        "targetName": "9d9mb8kooFfaD3SctgZtkxQypkshx6ezhbKio89ixyy2",
+        "entryValueUsd": 100,
+        "currentValueUsd": 100,
+        "status": "closed",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T16:12:19.053+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "strategy": "bid-ask",
+          "poolAddress": "9d9mb8kooFfaD3SctgZtkxQypkshx6ezhbKio89ixyy2"
+        }
+      },
+      "partialHistory": [],
+      "closed": true,
+      "updatedAt": "2026-01-08T18:52:40.118Z"
+    },
+    "699d1d8e-199e-49fa-8b34-953bceffab26": {
+      "position": {
+        "id": "699d1d8e-199e-49fa-8b34-953bceffab26",
+        "domain": "dlmm",
+        "target": "BGm1tav58oGcsQJehL9WXBFXF7D27vZsKefj4xJKD5Y",
+        "targetName": "BGm1tav58oGcsQJehL9WXBFXF7D27vZsKefj4xJKD5Y",
+        "entryValueUsd": 100,
+        "currentValueUsd": 100,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T16:45:07.322+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "strategy": "curve",
+          "poolAddress": "BGm1tav58oGcsQJehL9WXBFXF7D27vZsKefj4xJKD5Y"
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.306Z"
+    },
+    "3947e021-2bd9-431b-9ea3-00688d277ec6": {
+      "position": {
+        "id": "3947e021-2bd9-431b-9ea3-00688d277ec6",
+        "domain": "dlmm",
+        "target": "9ToMYnmEeYKc1AWYAFo8yjPKM1bt3vPhgw1U6qh9RxBd",
+        "targetName": "9ToMYnmEeYKc1AWYAFo8yjPKM1bt3vPhgw1U6qh9RxBd",
+        "entryValueUsd": 100,
+        "currentValueUsd": 100,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T17:16:01.59+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "strategy": "curve",
+          "poolAddress": "9ToMYnmEeYKc1AWYAFo8yjPKM1bt3vPhgw1U6qh9RxBd"
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.306Z"
+    },
+    "ac7fa238-ad75-4c55-8f76-ee54ec6d670e": {
+      "position": {
+        "id": "ac7fa238-ad75-4c55-8f76-ee54ec6d670e",
+        "domain": "dlmm",
+        "target": "5rCf1DM8LjKTw4YqhnoLcngyZYeNnQqztScTogYHAS6",
+        "targetName": "5rCf1DM8LjKTw4YqhnoLcngyZYeNnQqztScTogYHAS6",
+        "entryValueUsd": 100,
+        "currentValueUsd": 100,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T17:14:32.881+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "strategy": "spot",
+          "poolAddress": "5rCf1DM8LjKTw4YqhnoLcngyZYeNnQqztScTogYHAS6"
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.306Z"
+    },
+    "c35e783b-61e4-499e-85c2-95ee8f4aff58": {
+      "position": {
+        "id": "c35e783b-61e4-499e-85c2-95ee8f4aff58",
+        "domain": "dlmm",
+        "target": "5rCf1DM8LjKTw4YqhnoLcngyZYeNnQqztScTogYHAS6",
+        "targetName": "5rCf1DM8LjKTw4YqhnoLcngyZYeNnQqztScTogYHAS6",
+        "entryValueUsd": 100,
+        "currentValueUsd": 100,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T18:18:46.004+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "strategy": "curve",
+          "poolAddress": "5rCf1DM8LjKTw4YqhnoLcngyZYeNnQqztScTogYHAS6"
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.306Z"
+    },
+    "575d7d02-38e3-4f11-993b-a6ebbf1d42e7": {
+      "position": {
+        "id": "575d7d02-38e3-4f11-993b-a6ebbf1d42e7",
+        "domain": "dlmm",
+        "target": "BGm1tav58oGcsQJehL9WXBFXF7D27vZsKefj4xJKD5Y",
+        "targetName": "BGm1tav58oGcsQJehL9WXBFXF7D27vZsKefj4xJKD5Y",
+        "entryValueUsd": 100,
+        "currentValueUsd": 100,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T18:18:46.093+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "strategy": "curve",
+          "poolAddress": "BGm1tav58oGcsQJehL9WXBFXF7D27vZsKefj4xJKD5Y"
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.306Z"
     }
   },
   "spot": {
@@ -276,6 +645,100 @@
       ],
       "closed": true,
       "updatedAt": "2026-01-08T10:56:24.611Z"
+    },
+    "dcf271d4-4e85-44a3-b1ee-3f52e2dc4994": {
+      "position": {
+        "id": "dcf271d4-4e85-44a3-b1ee-3f52e2dc4994",
+        "domain": "spot",
+        "target": "DINO_MINT_ADDRESS",
+        "targetName": "DINO",
+        "entryValueUsd": 100,
+        "currentValueUsd": 0,
+        "status": "closed",
+        "side": null,
+        "size": 1000,
+        "entryPrice": 0.1,
+        "currentPrice": 0.1,
+        "openedAt": "2026-01-08T11:23:52.027+00:00",
+        "closedAt": "2026-01-08T11:24:41.063Z",
+        "realizedPnl": 0,
+        "metadata": {
+          "mint": "DINO_MINT_ADDRESS",
+          "amount": 1000,
+          "symbol": "DINO",
+          "entryPrice": 0.1,
+          "currentPrice": 0.15
+        }
+      },
+      "partialHistory": [
+        {
+          "timestamp": "2026-01-08T11:24:40.916Z",
+          "proportion": 1,
+          "realizedValueUsd": 100,
+          "realizedPnlUsd": 0
+        }
+      ],
+      "closed": true,
+      "updatedAt": "2026-01-08T11:24:41.063Z"
+    },
+    "c63890d5-b75d-42a6-bd1c-7e61f33f7502": {
+      "position": {
+        "id": "c63890d5-b75d-42a6-bd1c-7e61f33f7502",
+        "domain": "spot",
+        "target": "GBsngTQLDQ6Afv7A4JV6enHz6vHrdzgNC1e45DekQc1L",
+        "targetName": "KABUTO",
+        "entryValueUsd": 366,
+        "currentValueUsd": 378.08,
+        "status": "closed",
+        "side": null,
+        "size": 564044.55,
+        "entryPrice": 0.00064888,
+        "currentPrice": 0.0006703,
+        "openedAt": "2026-01-04T00:27:48.054+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "mint": "GBsngTQLDQ6Afv7A4JV6enHz6vHrdzgNC1e45DekQc1L",
+          "name": "KABUTO",
+          "symbol": "KABUTO"
+        }
+      },
+      "partialHistory": [],
+      "closed": true,
+      "updatedAt": "2026-01-08T16:08:45.384Z"
+    },
+    "780a35b5-d20c-4f22-9496-ffbb08bc66e1": {
+      "position": {
+        "id": "780a35b5-d20c-4f22-9496-ffbb08bc66e1",
+        "domain": "spot",
+        "target": "4qxSqMh6iEdbdvtMp8r5MK2psAGKNk57PfGeVo2VhczQ",
+        "targetName": "WHITEWHALE",
+        "entryValueUsd": 372,
+        "currentValueUsd": 0,
+        "status": "closed",
+        "side": null,
+        "size": 153221.17,
+        "entryPrice": 0.00242786,
+        "currentPrice": 0.00240567,
+        "openedAt": "2026-01-06T05:19:05.05+00:00",
+        "closedAt": "2026-01-08T15:38:36.825Z",
+        "realizedPnl": -3.3999999999999773,
+        "metadata": {
+          "mint": "4qxSqMh6iEdbdvtMp8r5MK2psAGKNk57PfGeVo2VhczQ",
+          "name": "WhiteWhale",
+          "symbol": "WHITEWHALE"
+        }
+      },
+      "partialHistory": [
+        {
+          "timestamp": "2026-01-08T15:38:36.682Z",
+          "proportion": 1,
+          "realizedValueUsd": 368.6,
+          "realizedPnlUsd": -3.3999999999999773
+        }
+      ],
+      "closed": true,
+      "updatedAt": "2026-01-08T15:38:36.825Z"
     }
   },
   "polymarket": {
@@ -350,6 +813,98 @@
       ],
       "closed": true,
       "updatedAt": "2026-01-08T10:56:23.705Z"
+    },
+    "08b65c5c-19fa-4650-ad7a-edaf9352748a": {
+      "position": {
+        "id": "08b65c5c-19fa-4650-ad7a-edaf9352748a",
+        "domain": "polymarket",
+        "target": "CONDITION_TEST_123",
+        "targetName": "Test Market Question",
+        "entryValueUsd": 100,
+        "currentValueUsd": 0,
+        "status": "closed",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0.5,
+        "currentPrice": 0.5,
+        "openedAt": "2026-01-08T11:23:51.863+00:00",
+        "closedAt": "2026-01-08T11:24:40.173Z",
+        "realizedPnl": 0,
+        "metadata": {
+          "shares": 200,
+          "outcome": "YES",
+          "question": "Will test pass?",
+          "entryPrice": 0.5,
+          "conditionId": "CONDITION_TEST_123",
+          "currentPrice": 0.25
+        }
+      },
+      "partialHistory": [
+        {
+          "timestamp": "2026-01-08T11:24:40.029Z",
+          "proportion": 1,
+          "realizedValueUsd": 100,
+          "realizedPnlUsd": 0
+        }
+      ],
+      "closed": true,
+      "updatedAt": "2026-01-08T11:24:40.174Z"
+    },
+    "cf37ac30-9baf-468a-91da-a1019fd1aa9e": {
+      "position": {
+        "id": "cf37ac30-9baf-468a-91da-a1019fd1aa9e",
+        "domain": "polymarket",
+        "target": "poly_sol_500",
+        "targetName": "Will Solana reach $500 in 2026?...",
+        "entryValueUsd": 210,
+        "currentValueUsd": 211.34,
+        "status": "open",
+        "side": "no",
+        "size": 724.14,
+        "entryPrice": 0.29,
+        "currentPrice": 0.31,
+        "openedAt": "2026-01-06T21:36:30.948+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "shares": 724.14,
+          "outcome": "no",
+          "category": "Crypto",
+          "question": "Will Solana reach $500 in 2026?",
+          "conditionId": "poly_sol_500"
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.431Z"
+    },
+    "b3b7c064-a4d4-47e8-a5d3-3d2ea2c12393": {
+      "position": {
+        "id": "b3b7c064-a4d4-47e8-a5d3-3d2ea2c12393",
+        "domain": "polymarket",
+        "target": "poly_ai_regulation",
+        "targetName": "Will US pass major AI regulation bill by June 2026...",
+        "entryValueUsd": 369,
+        "currentValueUsd": 397.32,
+        "status": "open",
+        "side": "yes",
+        "size": 1845,
+        "entryPrice": 0.2,
+        "currentPrice": 0.3,
+        "openedAt": "2026-01-07T12:50:14.676+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "shares": 1845,
+          "outcome": "yes",
+          "category": "Politics",
+          "question": "Will US pass major AI regulation bill by June 2026?",
+          "conditionId": "poly_ai_regulation"
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T21:34:00.431Z"
     }
   }
 }

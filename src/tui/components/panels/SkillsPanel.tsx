@@ -9,19 +9,9 @@ import { Box, Text } from 'ink';
 import Spinner from 'ink-spinner';
 import { useSkills } from '../../hooks/useSkills.js';
 
-const EffectivenessBar: React.FC<{ value: number }> = ({ value }) => {
-  const filled = Math.round(value / 10);
-  const empty = 10 - filled;
-  const color = value >= 70 ? 'green' : value >= 40 ? 'yellow' : 'red';
-
-  return (
-    <Text>
-      <Text color={color}>{'█'.repeat(filled)}</Text>
-      <Text dimColor>{'░'.repeat(empty)}</Text>
-      <Text dimColor> {value}%</Text>
-    </Text>
-  );
-};
+const SkillStatus: React.FC<{ effectiveness: number }> = ({ effectiveness }) => (
+  <Text color={effectiveness >= 50 ? 'green' : 'red'}>●</Text>
+);
 
 export const SkillsPanel: React.FC = () => {
   const { skills, recentFeedback, feedbackStats, loading, topSkills } = useSkills();
@@ -37,8 +27,17 @@ export const SkillsPanel: React.FC = () => {
     );
   }
 
+  const starterPackActive = skills.length > 0 && skills.every(skill => skill.id.startsWith('builtin-'));
+
   return (
     <Box flexDirection="column">
+      {starterPackActive && (
+        <Box marginBottom={1} flexDirection="column">
+          <Text color="yellow" bold>Starter skills active</Text>
+          <Text dimColor>Live cycles will replace these defaults with personalized reflections.</Text>
+        </Box>
+      )}
+
       {/* Stats row */}
       <Box marginBottom={1}>
         <Text>Active Skills: </Text>
@@ -53,16 +52,10 @@ export const SkillsPanel: React.FC = () => {
       {/* Top skills */}
       <Text dimColor bold>Top Skills:</Text>
       {topSkills.slice(0, 3).map((skill) => (
-        <Box key={skill.id} marginLeft={1}>
-          <Text>┌ </Text>
-          <Text color="cyan">{skill.name.slice(0, 25)}</Text>
-          <Text dimColor> ({skill.domain})</Text>
-        </Box>
-      ))}
-      {topSkills.slice(0, 3).map((skill, i) => (
-        <Box key={`bar-${skill.id}`} marginLeft={1}>
-          <Text>{i === topSkills.slice(0, 3).length - 1 ? '└ ' : '│ '}</Text>
-          <EffectivenessBar value={skill.effectiveness} />
+        <Box key={skill.id} marginLeft={1} gap={1}>
+          <SkillStatus effectiveness={skill.effectiveness} />
+          <Text color="cyan">{skill.name.slice(0, 22)}</Text>
+          <Text dimColor>({skill.domain})</Text>
         </Box>
       ))}
 

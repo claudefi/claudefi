@@ -56,6 +56,15 @@ Real-time feed of subagent actions:
 - Decision submissions
 - Error messages
 - Cycle status
+- Embedded agent chat (focus panel, press `Enter` to chat, `/help` for commands)
+
+#### Agent Chat Commands
+
+Once panel `2` (Agents) is focused, press `Enter` to grab the input box and talk to claudefi without leaving the dashboard. While the chat input is active, global shortcuts pause—press `Esc` to release focus. Available slash commands:
+
+- `/clear` - Reset the chat history in the panel
+- `/help` - Show the available command reference inline
+- `/retry` - Reconnect the chat session if the API key changed or a request failed
 
 ### Skills Panel
 
@@ -82,9 +91,11 @@ Live price feeds:
 | `2` | Focus Agents panel |
 | `3` | Focus Skills panel |
 | `4` | Focus Market panel |
+| `Enter` (Agents) | Start/submit agent chat input |
 | `c` | Open Config modal |
 | `s` | Open Skills browser |
 | `?` | Open Help modal |
+| `Esc` (chat) | Exit agent chat input |
 | `q` | Quit TUI |
 | `↑/↓` | Scroll in focused panel |
 | `Enter` | Select/expand item |

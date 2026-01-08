@@ -9,6 +9,7 @@ import React from 'react';
 import { Box, useInput, useApp } from 'ink';
 import { Panel } from './Panel.js';
 import { StatusBar } from './StatusBar.js';
+import { useAppContext } from '../../context/AppContext.js';
 
 export interface DashboardProps {
   focusedPanel: number;
@@ -41,9 +42,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onRefresh,
 }) => {
   const { exit } = useApp();
+  const { state } = useAppContext();
+  const inputLocked = state.inputCapture !== null;
 
   // Keyboard navigation
   useInput((input, key) => {
+    if (inputLocked) {
+      return;
+    }
+
     // Number keys to focus panels
     if (input >= '1' && input <= '4') {
       onPanelFocus(parseInt(input));

@@ -258,6 +258,14 @@ Choose ONE action:
 - Max leverage: 5x for volatile, 10x for majors
 - Max position: 30% of balance as margin
 - Check liquidation distance (need >15% buffer)
+- Stop losses: -8% to -15% depending on setup quality
+- Profit targets: Let winners run! Trail stops on +20%+ gains, don't exit for tiny profits
+
+**Avoid Over-Trading:**
+- A +5% gain with strong momentum should be HELD, not closed
+- Don't close winners just because they're profitable - wait for trend exhaustion
+- Only take profits when: momentum reversing, funding rates flipping against you, or 2R+ target hit
+- Small gains (+3-8%) are NOT profit targets - these are noise, not signal
 
 Respond with JSON: {"action", "target", "amountUsd", "leverage", "reasoning", "confidence"}`;
 }
