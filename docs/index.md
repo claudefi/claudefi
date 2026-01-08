@@ -14,30 +14,22 @@ hero:
       link: https://github.com/claudefi/claudefi
 
 features:
-  - title: dlmm
-    details: concentrated liquidity provision on meteora. dynamic fee optimization and range management.
-    icon:
+  - icon:
       src: /public-logos/meteora-logo.webp
-      width: 48
-      height: 48
-  - title: perps
-    details: perpetual futures trading on hyperliquid. rsi-based entries with dynamic position sizing.
-    icon:
+    title: dlmm
+    details: concentrated liquidity provision on meteora. dynamic fee optimization and range management.
+  - icon:
       src: /public-logos/hyperliquid-dark.png
-      width: 48
-      height: 48
-  - title: spot
-    details: memecoin trend trading via jupiter. momentum detection and risk-adjusted entries.
-    icon:
+    title: perps
+    details: perpetual futures trading on hyperliquid. rsi-based entries with dynamic position sizing.
+  - icon:
       src: /public-logos/moonshot.png
-      width: 48
-      height: 48
-  - title: polymarket
-    details: prediction market edge detection. probability analysis and kelly criterion sizing.
-    icon:
+    title: spot
+    details: memecoin trend trading via jupiter. momentum detection and risk-adjusted entries.
+  - icon:
       src: /public-logos/poly-dark.svg
-      width: 48
-      height: 48
+    title: polymarket
+    details: prediction market edge detection. probability analysis and kelly criterion sizing.
   - title: self-improving
     details: learns from every trade. wins become patterns, losses become warnings. skills evolve.
   - title: claude agent sdk
