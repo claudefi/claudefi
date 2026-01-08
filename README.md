@@ -52,7 +52,7 @@ bun run ralph
 
 ## The Ralph Loop
 
-Named after Ralph Wiggum. Not because he's smart, but because he's relentlessly persistent.
+Named after Ralph Wiggum. Not because he's smart, but because he's relentlessly persistent. Inspired by the [ralph-wiggum plugin](https://github.com/anthropics/claude-code/blob/main/plugins/ralph-wiggum/README.md) from Claude Code.
 
 ```
 OBSERVE → THINK → ACT → LEARN → REPEAT
