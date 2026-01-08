@@ -363,10 +363,15 @@ For sell/partial_sell:
       handler: async (args) => {
         const decision = args as z.infer<typeof spotDecisionSchema>;
 
+        // For sell actions, use position_id as target for proper idempotency and position matching
+        const target = (decision.action === 'sell' || decision.action === 'partial_sell')
+          ? decision.position_id
+          : (decision.mint || decision.symbol);
+
         runtime.decision = {
           domain: 'spot',
           action: decision.action,
-          target: decision.mint || decision.symbol,
+          target,
           amountUsd: decision.amount_usd,
           percentage: decision.percentage,
           reasoning: decision.reasoning,

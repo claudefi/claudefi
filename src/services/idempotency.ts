@@ -101,13 +101,26 @@ export class IdempotencyService {
         return { exists: false };
       }
 
-      // Parse the result if it exists
+      // Parse the result to check status
       let parsedResult: unknown = undefined;
       if (record.result) {
         try {
           parsedResult = JSON.parse(record.result);
         } catch {
           parsedResult = record.result;
+        }
+      }
+
+      // If record is marked as failed and is older than 10 minutes, allow retry
+      if (parsedResult && typeof parsedResult === 'object' && 'status' in parsedResult) {
+        if (parsedResult.status === 'failed') {
+          const ageMs = Date.now() - record.createdAt.getTime();
+          const TEN_MINUTES = 10 * 60 * 1000;
+
+          if (ageMs > TEN_MINUTES) {
+            // Old failed attempt - allow retry by treating as non-existent
+            return { exists: false };
+          }
         }
       }
 

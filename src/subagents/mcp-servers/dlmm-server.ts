@@ -211,11 +211,16 @@ For remove_liquidity/partial_remove:
       handler: async (args) => {
         const decision = args as z.infer<typeof dlmmDecisionSchema>;
 
+        // For remove actions, use position_id as target for proper idempotency and position matching
+        const target = (decision.action === 'remove_liquidity' || decision.action === 'partial_remove')
+          ? decision.position_id
+          : decision.pool_address;
+
         // Store in runtime for executor to pick up
         runtime.decision = {
           domain: 'dlmm',
           action: decision.action,
-          target: decision.pool_address,
+          target,
           amountUsd: decision.amount_usd,
           percentage: decision.percentage,
           reasoning: decision.reasoning,

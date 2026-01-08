@@ -379,10 +379,15 @@ For sell/partial_sell:
       handler: async (args) => {
         const decision = args as z.infer<typeof polymarketDecisionSchema>;
 
+        // For sell actions, use position_id as target for proper idempotency and position matching
+        const target = (decision.action === 'sell' || decision.action === 'partial_sell')
+          ? decision.position_id
+          : decision.condition_id;
+
         runtime.decision = {
           domain: 'polymarket',
           action: decision.action,
-          target: decision.condition_id,
+          target,
           amountUsd: decision.amount_usd,
           percentage: decision.percentage,
           reasoning: decision.reasoning,

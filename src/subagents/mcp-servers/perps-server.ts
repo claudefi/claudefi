@@ -317,10 +317,15 @@ For close_position/partial_close:
       handler: async (args) => {
         const decision = args as z.infer<typeof perpsDecisionSchema>;
 
+        // For close actions, use position_id as target for proper idempotency and position matching
+        const target = (decision.action === 'close_position' || decision.action === 'partial_close')
+          ? decision.position_id
+          : decision.symbol;
+
         runtime.decision = {
           domain: 'perps',
           action: decision.action,
-          target: decision.symbol,
+          target,
           amountUsd: decision.amount_usd,
           percentage: decision.percentage,
           reasoning: decision.reasoning,

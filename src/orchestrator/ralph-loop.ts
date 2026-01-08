@@ -19,14 +19,16 @@ import {
   getRecentDecisions,
   getDomainBalance,
   logDecision,
-  takePerformanceSnapshot,
   createPosition,
   updateDomainBalance,
-} from '../clients/supabase/client.js';
-
-// Supabase doesn't need init/disconnect
-const initDatabase = async () => console.log('[DB] Using Supabase');
-const disconnectDatabase = async () => {};
+  closePosition,
+  updatePositionValue,
+  takeAllPerformanceSnapshots,
+  initDataLayer,
+  shutdownDataLayer,
+  dataProviderName,
+  updateDecisionOutcome,
+} from '../data/provider.js';
 import {
   processTradeOutcome,
   explainSkillCreation,
@@ -46,9 +48,15 @@ import {
   positionMonitor,
   perpsLiquidationMonitor,
 } from '../services/position-monitor.js';
-import type { Domain, AgentDecision, DomainContext } from '../types/index.js';
+import type { Domain, AgentDecision, DomainContext, Market } from '../types/index.js';
 import { idempotencyService, startIdempotencyCleanup, stopIdempotencyCleanup } from '../services/idempotency.js';
 import { TranscriptStore } from '../transcripts/store.js';
+import { meteoraClient } from '../clients/meteora/client.js';
+import { hyperliquidClient } from '../clients/hyperliquid/client.js';
+import { gammaClient } from '../clients/polymarket/client.js';
+import { geckoTerminalClient } from '../clients/geckoterminal/client.js';
+import { positionCache } from '../services/position-cache.js';
+import { executeDecisionForDomain } from '../execution/index.js';
 
 // Types
 export interface CycleResult {
@@ -140,6 +148,93 @@ export async function recordTradeOutcome(
   }
 
   pendingOutcomes.delete(decisionId);
+
+  try {
+    await updateDecisionOutcome(
+      decisionId,
+      isProfit ? 'profit' : 'loss',
+      pnl,
+      pnlPercent
+    );
+  } catch (error) {
+    console.warn('   ⚠️ Failed to persist decision outcome:', error);
+  }
+}
+
+async function loadDomainMarkets(domain: Domain): Promise<Market[]> {
+  try {
+    switch (domain) {
+      case 'dlmm': {
+        const pools = await meteoraClient.getTopPools(10);
+        return pools.map(pool => ({
+          id: pool.address,
+          name: pool.name,
+          domain: 'dlmm',
+          metadata: {
+            tvl: parseFloat(pool.liquidity),
+            apr: meteoraClient.calculateApr(pool),
+            currentPrice: pool.current_price,
+            fees24h: pool.fees_24h,
+          },
+        }));
+      }
+      case 'perps': {
+        const markets = await hyperliquidClient.getMarkets();
+        return markets.slice(0, 20).map(market => ({
+          id: market.symbol,
+          name: `${market.symbol} Perp`,
+          domain: 'perps',
+          metadata: {
+            price: market.markPrice,
+            change24h: market.volume24h,
+            fundingRate: market.fundingRate,
+            volume24h: market.volume24h,
+            openInterest: market.openInterest,
+          },
+        }));
+      }
+      case 'polymarket': {
+        const markets = await gammaClient.getTrendingMarkets(20);
+        return markets.map(market => {
+          const prices = gammaClient.getMarketPrices(market);
+          const volume = (market.volume24hrClob || 0) + (market.volume24hrAmm || 0);
+          return {
+            id: market.id || market.condition_id,
+            name: market.question,
+            domain: 'polymarket' as const,
+            metadata: {
+              conditionId: market.condition_id,
+              yesPrice: prices.yesPrice,
+              noPrice: prices.noPrice,
+              volume24h: volume,
+              liquidity: market.liquidity,
+              endDate: market.endDate,
+            },
+          };
+        });
+      }
+      case 'spot': {
+        const pools = await geckoTerminalClient.getTrendingPools(20);
+        return pools.map(pool => ({
+          id: pool.address,
+          name: pool.symbol || pool.name,
+          domain: 'spot',
+          metadata: {
+            price: pool.priceUsd,
+            change24h: pool.priceChange24h,
+            volume24h: pool.volume24h,
+            liquidity: pool.liquidity,
+            buys24h: pool.buys24h,
+            sells24h: pool.sells24h,
+          },
+        }));
+      }
+    }
+  } catch (error) {
+    console.warn(`[${domain}] Failed to load market data:`, error);
+  }
+
+  return [];
 }
 
 /**
@@ -150,12 +245,14 @@ async function buildDomainContext(domain: Domain): Promise<DomainContext> {
   const positions = await getOpenPositions(domain);
   const recentDecisions = await getRecentDecisions(domain, 10);
   const portfolio = await getPortfolio();
+  positionCache.update(domain, positions);
+  const markets = await loadDomainMarkets(domain);
 
   return {
     domain,
     balance,
     positions,
-    markets: [], // Markets are fetched by the subagent via tools
+    markets,
     recentDecisions,
     performanceSnapshots: [],
     timestamp: new Date().toISOString(),
@@ -169,8 +266,9 @@ async function buildDomainContext(domain: Domain): Promise<DomainContext> {
 async function executeDecision(
   domain: Domain,
   decision: AgentDecision,
-  paperTrading: boolean
-): Promise<{ executed: boolean; idempotencyKey?: string }> {
+  paperTrading: boolean,
+  context: DomainContext
+): Promise<{ executed: boolean; idempotencyKey?: string; closeSummary?: { positionId: string; pnl: number; pnlPercent: number } }> {
   console.log(`📊 Executing ${domain} decision: ${decision.action}`);
   console.log(`   Target: ${decision.target || 'N/A'}`);
   console.log(`   Amount: $${decision.amountUsd || 0}`);
@@ -197,8 +295,21 @@ async function executeDecision(
   }
 
   try {
-    // For opening positions, deduct from balance
+    // PHASE 1: Call executor FIRST to validate decision
+    const executionResult = await executeDecisionForDomain(domain, decision, {
+      paperTrading,
+    });
+
+    if (!executionResult.success) {
+      throw new Error(executionResult.error || 'Execution failed');
+    }
+
+    // PHASE 2: Only if execution succeeds, update balances and positions
     const openActions = ['add_liquidity', 'open_long', 'open_short', 'buy_yes', 'buy_no', 'buy'];
+    const closeActions = ['remove_liquidity', 'partial_remove', 'close_position', 'partial_close', 'sell', 'partial_sell'];
+
+    let closeSummary: { positionId: string; pnl: number; pnlPercent: number } | undefined;
+
     if (openActions.includes(decision.action) && decision.amountUsd) {
       const balance = await getDomainBalance(domain);
       await updateDomainBalance(domain, balance - decision.amountUsd);
@@ -212,19 +323,85 @@ async function executeDecision(
       });
     }
 
+    if (closeActions.includes(decision.action)) {
+      const position = findPositionForDecision(context, decision);
+
+      if (!position) {
+        console.warn(`   ⚠️ No matching position found for close action in ${domain}`);
+      } else {
+        const percentage = Math.max(0, Math.min(decision.percentage ?? 100, 100));
+        const proportion = percentage / 100 || 1;
+        const baselineValue = position.currentValueUsd > 0 ? position.currentValueUsd : position.entryValueUsd;
+        const realizedValue = baselineValue * proportion;
+        const costBasis = position.entryValueUsd * proportion;
+        const pnl = realizedValue - costBasis;
+        const pnlPercent = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
+
+        const balance = await getDomainBalance(domain);
+        await updateDomainBalance(domain, balance + realizedValue);
+
+        positionCache.recordPartialClose(domain, position, proportion, realizedValue, pnl);
+
+        if (proportion >= 0.999) {
+          await closePosition(domain, position.id, {
+                currentValueUsd: baselineValue - realizedValue,
+                realizedPnl: pnl,
+                metadata: {
+                  ...position.metadata,
+                  closedByDecision: true,
+                },
+              });
+          positionCache.markClosed(domain, position, pnl);
+        } else {
+          const remainingValue = Math.max(baselineValue - realizedValue, 0);
+          await updatePositionValue(position.id, remainingValue, position.metadata?.currentPrice as number | undefined);
+        }
+
+        closeSummary = { positionId: position.id, pnl, pnlPercent };
+      }
+    }
+
     console.log(`   Mode: ${paperTrading ? 'PAPER' : 'REAL'}`);
     console.log('   ✅ Decision executed');
 
     // Update idempotency record with success
     await idempotencyService.updateResult(key, { status: 'success', timestamp: new Date().toISOString() });
 
-    return { executed: true, idempotencyKey: key };
+    return { executed: true, idempotencyKey: key, closeSummary };
   } catch (error) {
     // Remove the idempotency reservation so we can retry
     await idempotencyService.remove(key);
     console.error(`   ❌ Execution failed:`, error);
     return { executed: false };
   }
+}
+
+function findPositionForDecision(
+  context: DomainContext,
+  decision: AgentDecision
+): DomainContext['positions'][number] | undefined {
+  const metadataId = typeof decision.metadata?.positionId === 'string'
+    ? decision.metadata.positionId
+    : undefined;
+
+  if (metadataId) {
+    const match = context.positions.find(position => position.id === metadataId);
+    if (match) return match;
+  }
+
+  if (decision.target) {
+    const byTarget = context.positions.find(position => position.target === decision.target);
+    if (byTarget) return byTarget;
+  }
+
+  const cached = positionCache.find(context.domain, (position) => {
+    if (metadataId && position.id === metadataId) return true;
+    if (decision.target && position.target === decision.target) return true;
+    return false;
+  });
+  if (cached) return cached;
+
+  return context.positions[0];
 }
 
 /**
@@ -240,6 +417,7 @@ export async function runRalphLoop(
   console.log(`   Mode: ${cfg.paperTrading ? 'PAPER' : 'REAL'}`);
   console.log(`   Cycle interval: ${cfg.cycleIntervalMs / 1000 / 60} minutes`);
   console.log(`   Hooks: ${hookRegistry.getHooks().length} registered`);
+  console.log(`   Data provider: ${dataProviderName.toUpperCase()}`);
 
   const anthropic = new Anthropic();
 
@@ -334,9 +512,15 @@ export async function runRalphLoop(
 
     for (const domain of cfg.domains) {
       const decision = decisions.get(domain);
+      const domainContext = contexts.get(domain);
 
       if (!decision) {
         results.push({ domain, decision: null, executed: false, outcome: 'skipped' });
+        continue;
+      }
+
+      if (!domainContext) {
+        results.push({ domain, decision, executed: false, outcome: 'failed', error: 'missing context' });
         continue;
       }
 
@@ -364,7 +548,8 @@ export async function runRalphLoop(
       }
 
       // Execute the decision
-      const execResult = await executeDecision(domain, decision, cfg.paperTrading);
+      const context = contexts.get(domain);
+      const execResult = await executeDecision(domain, decision, cfg.paperTrading, domainContext);
 
       // Run PostDecision hooks (logging)
       await hookRegistry.run('PostDecision', {
@@ -395,6 +580,14 @@ export async function runRalphLoop(
           outcome: 'pending',
           timestamp: new Date(),
         });
+
+        if (execResult.closeSummary) {
+          await recordTradeOutcome(
+            decisionRecord.id,
+            execResult.closeSummary.pnl,
+            execResult.closeSummary.pnlPercent
+          );
+        }
       }
 
       results.push({
@@ -417,7 +610,6 @@ export async function runRalphLoop(
     // 4. LEARN - Take performance snapshots (domain + total)
     console.log('\n📈 Taking performance snapshots...');
     try {
-      const { takeAllPerformanceSnapshots } = await import('../clients/supabase/client.js');
       await takeAllPerformanceSnapshots();
       console.log('   ✅ Snapshots taken for all domains + total portfolio');
     } catch (err) {
@@ -539,7 +731,7 @@ Features:
 
   // Initialize database
   console.log('[DB] Initializing database...');
-  await initDatabase();
+  await initDataLayer();
 
   // Get domains from env or default
   const envDomains = process.env.ACTIVE_DOMAINS?.split(',').map(d => d.trim()) as Domain[] | undefined;
@@ -564,7 +756,7 @@ Features:
     positionMonitor.stop();
     perpsLiquidationMonitor.stop();
     stopIdempotencyCleanup();
-    await disconnectDatabase();
+    await shutdownDataLayer();
     process.exit(0);
   };
 
@@ -575,7 +767,7 @@ Features:
     await runRalphLoop(config);
   } catch (error) {
     console.error('❌ Fatal error:', error);
-    await disconnectDatabase();
+    await shutdownDataLayer();
     process.exit(1);
   }
 }
