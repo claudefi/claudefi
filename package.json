@@ -1,16 +1,27 @@
 {
   "name": "claudefi",
-  "version": "1.0.0",
-  "description": "Autonomous DeFi trading agent powered by Claude Agent SDK",
+  "version": "0.1.0",
+  "description": "the open source claude agent that learns to trade defi",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "claudefi": "./dist/cli/index.js"
   },
+  "files": [
+    "dist",
+    "src",
+    "prisma"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup src/cli/index.ts --format esm --dts --clean",
+    "build:tsc": "tsc",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
+    "start": "bun run src/orchestrator/ralph-loop.ts",
+    "start:node": "npx tsx src/orchestrator/ralph-loop.ts",
+    "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",
     "test": "DATA_PROVIDER=prisma vitest run",
     "test:watch": "DATA_PROVIDER=prisma vitest --watch",
@@ -83,6 +94,7 @@
     "@types/node": "^22.10.7",
     "@types/react": "^18.3.17",
     "mermaid": "^11.12.2",
+    "tsup": "^8.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitepress": "^1.6.4",
@@ -90,7 +102,8 @@
     "vitest": "^2.1.8"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
   },
   "repository": {
     "type": "git",

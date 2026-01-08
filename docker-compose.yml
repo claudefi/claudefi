@@ -1,0 +1,50 @@
+# claudefi docker-compose
+# The open source claude agent that learns to trade defi
+#
+# Quick start:
+#   cp .env.example .env
+#   # Edit .env with your ANTHROPIC_API_KEY
+#   docker compose up -d
+
+version: '3.8'
+
+services:
+  claudefi:
+    build: .
+    container_name: claudefi
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PAPER_TRADING=${PAPER_TRADING:-true}
+      - ACTIVE_DOMAINS=${ACTIVE_DOMAINS:-dlmm,perps,polymarket,spot}
+      - CYCLE_INTERVAL_MS=${CYCLE_INTERVAL_MS:-1800000}
+      - CONFIDENCE_THRESHOLD=${CONFIDENCE_THRESHOLD:-0.6}
+      - DATABASE_URL=file:/app/data/claudefi.db
+    volumes:
+      # Persist database
+      - ./data:/app/data
+      # Persist skills and memory
+      - ./.claude:/app/.claude
+    # Optional: expose monitoring endpoint
+    # ports:
+    #   - "3000:3000"
+
+  # Optional: Run with Supabase instead of SQLite
+  claudefi-supabase:
+    build: .
+    container_name: claudefi-supabase
+    restart: unless-stopped
+    profiles:
+      - supabase
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - DATA_PROVIDER=supabase
+      - PAPER_TRADING=${PAPER_TRADING:-true}
+      - ACTIVE_DOMAINS=${ACTIVE_DOMAINS:-dlmm,perps,polymarket,spot}
+    volumes:
+      - ./.claude:/app/.claude
+
+volumes:
+  data:
