@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useStdout } from 'ink';
 import Spinner from 'ink-spinner';
+import qrcode from 'qrcode-terminal';
 import { useAppContext, InitStepStatus } from '../context/AppContext.js';
 
 // ASCII art logo
@@ -18,6 +19,14 @@ const LOGO = [
   ' ╚██████╗███████╗██║  ██║╚██████╔╝██████╔╝███████╗██║     ██║',
   '  ╚═════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝     ╚═╝',
 ];
+
+const DISCORD_URL = 'https://discord.gg/nzW8srS9';
+
+// Generate QR code once at module load
+let discordQrLines: string[] = [];
+qrcode.generate(DISCORD_URL, { small: true }, (qr: string) => {
+  discordQrLines = qr.split('\n').filter(line => line.length > 0);
+});
 
 const STEPS = [
   { key: 'config', label: 'Loading configuration' },
@@ -87,7 +96,7 @@ export const LoadingScreen: React.FC = () => {
 
       {/* Tagline */}
       <Box justifyContent="center" marginBottom={2}>
-        <Text dimColor>autonomous defi trading agent</Text>
+        <Text dimColor>the open source claude agent that learns to trade defi</Text>
       </Box>
 
       {/* Status message with spinner */}
@@ -134,9 +143,32 @@ export const LoadingScreen: React.FC = () => {
         </Text>
       </Box>
 
+      {/* Divider */}
+      <Box marginTop={2} justifyContent="center">
+        <Text dimColor>────────────────────────────────────</Text>
+      </Box>
+
+      {/* Discord QR code */}
+      <Box flexDirection="column" marginTop={1} alignItems="center">
+        <Text dimColor>scan to join discord</Text>
+        {discordQrLines.map((line, i) => (
+          <Text key={i} color="white">{line}</Text>
+        ))}
+        <Text color="cyan">{DISCORD_URL}</Text>
+      </Box>
+
+      {/* Community links */}
+      <Box marginTop={1} justifyContent="center">
+        <Text dimColor>web: </Text>
+        <Text color="cyan">claudefi.com</Text>
+        <Text dimColor>  ·  </Text>
+        <Text dimColor>x: </Text>
+        <Text color="cyan">@claudefi11</Text>
+      </Box>
+
       {/* Footer */}
       <Box marginTop={1} justifyContent="center">
-        <Text dimColor italic>powered by claude agent sdk</Text>
+        <Text dimColor italic>built for the trenches · powered by claude</Text>
       </Box>
     </Box>
   );

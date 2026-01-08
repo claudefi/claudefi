@@ -774,5 +774,8 @@ Features:
   }
 }
 
-// Run if executed directly
-main().catch(console.error);
+// Run if executed directly (not when imported)
+// @ts-ignore - Bun provides import.meta.main
+if (import.meta.main || process.argv[1]?.includes('ralph-loop')) {
+  main().catch(console.error);
+}

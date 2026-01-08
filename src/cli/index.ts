@@ -9,11 +9,13 @@
  *   init      - Setup wizard for new installations
  *   run       - Start the trading loop (alias: start)
  *   monitor   - Live dashboard view
+ *   chat      - Chat with claudefi about your portfolio
  *   status    - Quick portfolio status
  *   memory    - View learned patterns and warnings
  *   skills    - Manage Claude Code skills
  *   config    - View/edit configuration
  *   doctor    - Diagnose issues
+ *   learn     - Educational content about how claudefi works
  */
 
 import { Command } from 'commander';
@@ -69,6 +71,14 @@ program
   .action(monitorCommand);
 
 program
+  .command('chat')
+  .description('chat with claudefi about your agents and portfolio')
+  .action(async () => {
+    const { chatCommand } = await import('./commands/chat.js');
+    await chatCommand();
+  });
+
+program
   .command('status')
   .description('show quick portfolio status')
   .option('-d, --domain <domain>', 'show status for specific domain')
@@ -109,6 +119,16 @@ program
     // Placeholder - will be implemented in Phase 2
     const { doctorCommand } = await import('./commands/doctor.js');
     await doctorCommand();
+  });
+
+// Learn command - educational content
+program
+  .command('learn')
+  .description('learn how claudefi works')
+  .argument('[topic]', 'topic to learn about (loop, subagents, skills, safety, wallets)')
+  .action(async (topic) => {
+    const { learnCommand } = await import('./commands/learn.js');
+    await learnCommand(topic);
   });
 
 // Version command with runtime info

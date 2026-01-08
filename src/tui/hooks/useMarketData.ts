@@ -29,11 +29,20 @@ export function useMarketData() {
       try {
         const { meteoraClient } = await import('../../clients/meteora/client.js');
         const pools = await meteoraClient.getTopPools(5);
-        marketData.dlmm.topPools = pools.map(p => ({
-          name: p.name,
-          apr: p.apr || 0,
-          tvl: parseFloat(p.liquidity) || 0,
-        }));
+        marketData.dlmm.topPools = pools.map(p => {
+          // Use API apr if available, otherwise calculate from fees
+          const tvl = parseFloat(p.liquidity) || 0;
+          let apr = p.apr || 0;
+          // If APR is 0 but we have fees, calculate it
+          if (apr === 0 && p.fees_24h > 0 && tvl > 0) {
+            apr = (p.fees_24h * 365 / tvl) * 100;
+          }
+          return {
+            name: p.name,
+            apr,
+            tvl,
+          };
+        });
       } catch {
         // Ignore errors, use empty data
       }
