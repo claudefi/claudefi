@@ -85,12 +85,14 @@ Respond with valid JSON:
 {
   "action": "add_liquidity" | "remove_liquidity" | "hold",
   "target": "POOL_ADDRESS",
-  "amount_usd": 500,
+  "amountUsd": 500,  // REQUIRED for add/remove (use position value for removes)
   "strategy": "spot" | "curve" | "bid-ask",
   "reasoning": "Detailed explanation",
   "confidence": 0.75
 }
 \`\`\`
+
+**CRITICAL**: Always include \`amountUsd\` for add/remove actions. For removes, use the position's current value.
 
 **CRITICAL: Target must be the FULL POOL ADDRESS from the pool list!**`;
 }
@@ -258,5 +260,5 @@ Choose ONE action:
 - **curve** - Wide range, lower fees, less IL (for volatile pairs)
 - **bid-ask** - Directional view on price movement
 
-Respond with JSON: {"action", "target", "amount_usd", "strategy", "reasoning", "confidence"}`;
+Respond with JSON: {"action", "target", "amountUsd", "strategy", "reasoning", "confidence"}`;
 }

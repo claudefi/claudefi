@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:resilience": "tsx src/test-resilience.ts",
     "test:cycle": "tsx src/test-cycle.ts",
+    "test:stress": "tsx src/test-e2e-stress.ts",
     "cli": "tsx src/cli/index.ts",
     "cli:init": "tsx src/cli/index.ts init",
     "cli:run": "tsx src/cli/index.ts run",

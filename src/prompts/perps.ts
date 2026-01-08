@@ -88,15 +88,17 @@ Perps let you trade price movements with LEVERAGE without expiration.
 \`\`\`json
 {
   "action": "open_long" | "open_short" | "close_position" | "hold",
-  "symbol": "BTC",
-  "size_usd": 100,
-  "leverage": 5,
+  "target": "BTC",  // Symbol for new positions, positionId for closes
+  "amountUsd": 100,  // REQUIRED for all non-hold actions (use position value for closes)
+  "leverage": 5,  // Only for open_long/open_short
   "reasoning": "Technical analysis explanation",
   "confidence": 0.75
 }
 \`\`\`
 
-**Remember:** size_usd is POSITION SIZE, not margin. Margin = size_usd / leverage.`;
+**CRITICAL**: Always include \`amountUsd\` for open/close actions. For closes, use the position's current value.
+
+**Remember:** amountUsd is POSITION SIZE, not margin. Margin = amountUsd / leverage.`;
 }
 
 function formatMarketLine(m: PerpMarket): string {
@@ -257,5 +259,5 @@ Choose ONE action:
 - Max position: 30% of balance as margin
 - Check liquidation distance (need >15% buffer)
 
-Respond with JSON: {"action", "symbol", "size_usd", "leverage", "reasoning", "confidence"}`;
+Respond with JSON: {"action", "target", "amountUsd", "leverage", "reasoning", "confidence"}`;
 }

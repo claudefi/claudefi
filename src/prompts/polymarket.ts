@@ -79,11 +79,13 @@ Polymarket is a prediction market where you buy YES or NO shares on event outcom
 {
   "action": "buy_yes" | "buy_no" | "sell" | "hold",
   "target": "CONDITION_ID",
-  "amount_usd": 100,
+  "amountUsd": 100,  // REQUIRED for all non-hold actions (use position value for sells)
   "reasoning": "Research-based explanation of why market is mispriced",
   "confidence": 0.75
 }
-\`\`\``;
+\`\`\`
+
+**CRITICAL**: Always include \`amountUsd\` for buy/sell actions. For sells, use the position's current value.
 }
 
 function formatMarketLine(m: PolymarketMarket): string {
@@ -248,5 +250,5 @@ Choose ONE action:
 - Size based on edge: bigger edge = larger position (max 20%)
 - Factor in time to resolution
 
-Respond with JSON: {"action", "target", "amount_usd", "reasoning", "confidence"}`;
+Respond with JSON: {"action", "target", "amountUsd", "reasoning", "confidence"}`;
 }

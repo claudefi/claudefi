@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Claudefi Stress Test Report</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', monospace;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      line-height: 1.6;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: 1.5em;
+      font-weight: 600;
+      margin: 40px 0 20px 0;
+      color: #ffffff;
+      border-bottom: 1px solid #333;
+      padding-bottom: 8px;
+    }
+
+    .header {
+      margin-bottom: 40px;
+      border-bottom: 2px solid #333;
+      padding-bottom: 20px;
+    }
+
+    .timestamp {
+      color: #888;
+      font-size: 0.85em;
+      font-family: system-ui;
+    }
+
+    .verdict {
+      display: inline-block;
+      font-size: 1.2em;
+      font-weight: 700;
+      margin: 20px 0;
+      padding: 8px 16px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .verdict.pass {
+      background: #1a3d1a;
+      color: #4ade80;
+      border: 1px solid #4ade80;
+    }
+    .verdict.fail {
+      background: #3d1a1a;
+      color: #f87171;
+      border: 1px solid #f87171;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin: 30px 0;
+    }
+
+    .metric-card {
+      background: #151515;
+      padding: 20px;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+
+    .metric-card h3 {
+      margin: 0 0 12px 0;
+      font-size: 0.8em;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 500;
+    }
+
+    .metric-card .value {
+      font-size: 2.5em;
+      font-weight: 700;
+      color: #ffffff;
+      font-family: 'SF Mono', monospace;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      background: #151515;
+      border: 1px solid #333;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+
+    th {
+      background: #1a1a1a;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      font-size: 0.75em;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .bug {
+      background: #2a1515;
+      border-left: 3px solid #ef4444;
+      padding: 16px;
+      margin: 12px 0;
+      border-radius: 4px;
+    }
+
+    .warning {
+      background: #2a2515;
+      border-left: 3px solid #f59e0b;
+      padding: 16px;
+      margin: 12px 0;
+      border-radius: 4px;
+    }
+
+    .recommendations {
+      background: #152025;
+      border-left: 3px solid #3b82f6;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+
+    .recommendations h2 {
+      margin-top: 0;
+      border: none;
+      padding-bottom: 0;
+    }
+
+    ul {
+      margin: 12px 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin: 8px 0;
+      line-height: 1.5;
+    }
+
+    strong {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    em {
+      color: #888;
+      font-style: normal;
+      font-size: 0.9em;
+    }
+
+    .status-pass { color: #4ade80; }
+    .status-fail { color: #f87171; }
+    .status-warn { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Claudefi Stress Test Report</h1>
+    <p class="timestamp">2026-01-08T10:40:44.675Z</p>
+    <div class="verdict fail">FAIL</div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric-card">
+      <h3>Success Rate</h3>
+      <div class="value">91.7%</div>
+    </div>
+    <div class="metric-card">
+      <h3>Total Cycles</h3>
+      <div class="value">3</div>
+    </div>
+    <div class="metric-card">
+      <h3>Avg Cycle Time</h3>
+      <div class="value">44.6s</div>
+    </div>
+    <div class="metric-card">
+      <h3>P95 Cycle Time</h3>
+      <div class="value">50.5s</div>
+    </div>
+  </div>
+
+  <h2>Domain Performance</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Domain</th>
+        <th>Decisions</th>
+        <th>Successes</th>
+        <th>Failures</th>
+        <th>Success Rate</th>
+        <th>Avg Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+          <tr>
+            <td><strong>DLMM</strong></td>
+            <td>3</td>
+            <td class="status-pass">3</td>
+            <td class="">0</td>
+            <td>100.0%</td>
+            <td>11.1s</td>
+          </tr>
+        
+          <tr>
+            <td><strong>PERPS</strong></td>
+            <td>3</td>
+            <td class="status-pass">3</td>
+            <td class="">0</td>
+            <td>100.0%</td>
+            <td>11.1s</td>
+          </tr>
+        
+          <tr>
+            <td><strong>POLYMARKET</strong></td>
+            <td>3</td>
+            <td class="status-warn">2</td>
+            <td class="status-fail">1</td>
+            <td>66.7%</td>
+            <td>11.1s</td>
+          </tr>
+        
+          <tr>
+            <td><strong>SPOT</strong></td>
+            <td>3</td>
+            <td class="status-pass">3</td>
+            <td class="">0</td>
+            <td>100.0%</td>
+            <td>11.1s</td>
+          </tr>
+        
+    </tbody>
+  </table>
+
+  <h2>Systems Tested</h2>
+  <ul>
+    <li><strong>Skills:</strong> 12 checks</li>
+    <li><strong>Subagents:</strong> 12 invocations</li>
+    <li><strong>Hooks:</strong> 24 executions</li>
+    <li><strong>Monitoring:</strong> 3 cycles</li>
+  </ul>
+
+  <h2>Edge Cases</h2>
+  <p>Attempted: <strong>1</strong> | Handled: <strong>1</strong></p>
+
+  
+    <h2>Critical Bugs</h2>
+    <p style="margin-bottom: 16px;">Found 5 critical issues</p>
+    
+      <div class="bug">
+        <strong>PERPS - Cycle 1</strong><br>
+        Amount missing or $0<br>
+        <em>Symptom: Decision has action but no amount</em>
+      </div>
+    
+      <div class="bug">
+        <strong>POLYMARKET - Cycle 1</strong><br>
+        Amount missing or $0<br>
+        <em>Symptom: Decision has action but no amount</em>
+      </div>
+    
+      <div class="bug">
+        <strong>PERPS - Cycle 2</strong><br>
+        Amount missing or $0<br>
+        <em>Symptom: Decision has action but no amount</em>
+      </div>
+    
+      <div class="bug">
+        <strong>DLMM - Cycle 3</strong><br>
+        Amount missing or $0<br>
+        <em>Symptom: Decision has action but no amount</em>
+      </div>
+    
+      <div class="bug">
+        <strong>PERPS - Cycle 3</strong><br>
+        Amount missing or $0<br>
+        <em>Symptom: Decision has action but no amount</em>
+      </div>
+    
+  
+
+  
+
+  <div class="recommendations">
+    <h2>Recommendations</h2>
+    <ul>
+      <li>Fix 5 critical bugs before production</li><li>Success rate 91.7% below 95% threshold</li>
+    </ul>
+  </div>
+
+  <h2>Configuration</h2>
+  <ul>
+    <li><strong>Cycles:</strong> 3</li>
+    <li><strong>Domains:</strong> dlmm, perps, polymarket, spot</li>
+    <li><strong>Edge Case Rate:</strong> 30%</li>
+    <li><strong>Model:</strong> claude-3-5-haiku-20241022</li>
+    <li><strong>Paper Trading:</strong> Yes</li>
+  </ul>
+</body>
+</html>

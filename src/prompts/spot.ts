@@ -79,11 +79,13 @@ Memecoins are high-risk, high-reward tokens driven by community, memes, and spec
 {
   "action": "buy" | "sell" | "hold",
   "target": "TOKEN_ADDRESS",
-  "amount_usd": 100,
+  "amountUsd": 100,  // REQUIRED for buy/sell (use position value for sells)
   "reasoning": "Why this token, why now",
   "confidence": 0.75
 }
-\`\`\``;
+\`\`\`
+
+**CRITICAL**: Always include \`amountUsd\` for buy/sell actions. For sells, use the position's current value.
 }
 
 function formatTokenLine(t: SpotToken): string {
@@ -233,5 +235,5 @@ Choose ONE action:
 - Set mental stop-loss (exit at -20%)
 - Take profits on 2x gains
 
-Respond with JSON: {"action", "target", "amount_usd", "reasoning", "confidence"}`;
+Respond with JSON: {"action", "target", "amountUsd", "reasoning", "confidence"}`;
 }
