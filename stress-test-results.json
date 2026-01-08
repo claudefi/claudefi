@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-08T10:40:44.675Z",
+  "timestamp": "2026-01-08T10:58:07.442Z",
   "config": {
     "cycles": 3,
     "domains": [
@@ -14,38 +14,38 @@
   },
   "metrics": {
     "totalCycles": 3,
-    "totalDuration": 133767,
-    "successRate": 0.9166666666666666,
+    "totalDuration": 141429,
+    "successRate": 1,
     "cycleTimings": {
-      "avg": 44589,
-      "min": 41526,
-      "max": 50472,
-      "p95": 50472
+      "avg": 47143,
+      "min": 44191,
+      "max": 51975,
+      "p95": 51975
     },
     "domainMetrics": {
       "dlmm": {
         "decisions": 3,
         "successes": 3,
         "failures": 0,
-        "avgDecisionTime": 11147.25
+        "avgDecisionTime": 11785.75
       },
       "perps": {
         "decisions": 3,
         "successes": 3,
         "failures": 0,
-        "avgDecisionTime": 11147.25
+        "avgDecisionTime": 11785.75
       },
       "polymarket": {
         "decisions": 3,
-        "successes": 2,
-        "failures": 1,
-        "avgDecisionTime": 11147.25
+        "successes": 3,
+        "failures": 0,
+        "avgDecisionTime": 11785.75
       },
       "spot": {
         "decisions": 3,
         "successes": 3,
         "failures": 0,
-        "avgDecisionTime": 11147.25
+        "avgDecisionTime": 11785.75
       }
     },
     "systemsTestedCount": {
@@ -54,9 +54,28 @@
       "hooks": 24,
       "monitoring": 3
     },
-    "edgeCasesAttempted": 1,
-    "edgeCasesHandled": 1,
+    "edgeCasesAttempted": 4,
+    "edgeCasesHandled": 4,
     "criticalBugs": [
+      {
+        "severity": "critical",
+        "domain": "dlmm",
+        "cycle": 1,
+        "description": "Amount missing or $0",
+        "symptom": "Decision has action but no amount",
+        "context": {
+          "decision": {
+            "domain": "dlmm",
+            "action": "remove_liquidity",
+            "target": "1ad8b4af-3bed-4a9a-a6b4-d820657a7b4a",
+            "reasoning": "Rotating out of the lowest-performing position (SOL-USDC 10 bps at 58.8% APR) to free up capital for higher-yield opportunities. This position has a fee/TVL ratio of only 0.161 compared to alternatives like MUSH-SOL with 13.08 fee/TVL ratio. In paper trading mode, we should be aggressive and chase higher yields. The position is at break-even so no gains to lock in - pure rotation play to optimize portfolio yield. Will redeploy the $400 into a higher-APR pool like MUSH-SOL (4,773% APR, $99K TVL - above safety threshold).",
+            "confidence": 0.72,
+            "metadata": {
+              "positionId": "1ad8b4af-3bed-4a9a-a6b4-d820657a7b4a"
+            }
+          }
+        }
+      },
       {
         "severity": "critical",
         "domain": "perps",
@@ -68,8 +87,8 @@
             "domain": "perps",
             "action": "close_position",
             "target": "041a513e-629d-4587-b9d8-5b829cfacffb",
-            "reasoning": "Taking profits on SOL long position showing +15% unrealized PnL ($30 gain). Market momentum is broadly bearish across all major assets - SOL itself shows bearish momentum with price ($134.75) below EMA20 ($136.25) and neutral RSI (44.7). Judge feedback specifically praised profit-taking in bearish conditions. Locking in gains now before bearish momentum potentially erases them. This also frees up capital for better opportunities once market conditions improve.",
-            "confidence": 0.75,
+            "reasoning": "Closing SOL-PERP long position to lock in substantial profits. Entry was at $100, current price is $135.22 (+35% price appreciation). With 5x leverage, this represents approximately +175% ROI on margin. Technical analysis shows: SOL price ($135.22) is now below EMA20 ($136.29), momentum is bearish, and RSI is neutral at 47.3. Judge feedback explicitly states to 'lock profits when price breaks below EMA20 with bearish momentum' and 'exit winners when technicals flip bearish'. Additionally, I'm currently at 4 positions (exceeds max 3 rule), so closing one is necessary for risk management. The negative funding rate (-0.0013%, shorts pay longs) is favorable, but the bearish technical setup suggests taking profits now rather than risking a reversal.",
+            "confidence": 0.85,
             "metadata": {
               "positionId": "041a513e-629d-4587-b9d8-5b829cfacffb"
             }
@@ -78,19 +97,19 @@
       },
       {
         "severity": "critical",
-        "domain": "polymarket",
-        "cycle": 1,
+        "domain": "dlmm",
+        "cycle": 2,
         "description": "Amount missing or $0",
         "symptom": "Decision has action but no amount",
         "context": {
           "decision": {
-            "domain": "polymarket",
-            "action": "sell",
-            "target": "31e4ea48-2a16-4b54-8d9b-75096aec152e",
-            "reasoning": "PORTFOLIO CLEANUP - Exiting underwater YES position on test market. Entry price was $0.50, current market price is $0.25 per metadata, indicating approximately 50% unrealized loss. Market probability has halved from 50% to 25%. Following validated pattern from judge feedback: \"Exit extreme negative-edge positions first\" and \"Exit largest negative-edge positions first when cleaning up portfolio misalignments.\" With only $1.00 available balance, cannot make meaningful new trades. Cutting losses to preserve capital and reset portfolio for better opportunities.",
-            "confidence": 0.85,
+            "domain": "dlmm",
+            "action": "remove_liquidity",
+            "target": "5c5b4a85-5acb-4da8-bb50-71347273c515",
+            "reasoning": "Removing one of two duplicate SOL-USDC positions to free up capital for diversification. Current portfolio has $1 available which is insufficient for any action. Both positions are in identical pools which concentrates risk unnecessarily. The removed position has earned $15 in fees (10% yield) - a reasonable exit point. This will free up ~$150 to potentially deploy into a higher-APR opportunity like MUSH-SOL (4770% APR, $98k TVL, meets safety threshold) for better capital efficiency. Paper trading mode encourages testing diversification strategies rather than sitting in concentrated positions.",
+            "confidence": 0.72,
             "metadata": {
-              "positionId": "31e4ea48-2a16-4b54-8d9b-75096aec152e"
+              "positionId": "5c5b4a85-5acb-4da8-bb50-71347273c515"
             }
           }
         }
@@ -106,8 +125,8 @@
             "domain": "perps",
             "action": "close_position",
             "target": "041a513e-629d-4587-b9d8-5b829cfacffb",
-            "reasoning": "Closing SOL-PERP long to lock in +15% gains ($30 profit). Technical indicators confirm exit timing: price ($134.71) is below EMA20 ($136.24), momentum is bearish, and RSI at 44.5 shows neutral-to-weak conditions. Judge feedback strongly emphasizes \"exit winners when technicals flip bearish\" and \"lock in gains during Fear conditions.\" Already took partial profits previously - now securing remaining gains before they potentially erode. At max position count (3), so closing this also frees up capital for better opportunities if market conditions improve.",
-            "confidence": 0.78,
+            "reasoning": "Closing SOL-PERP position to lock in +15% unrealized gains ($30). Multiple factors support this exit: (1) Price at $135.25 is below EMA20 ($136.30) with bearish momentum - judge feedback explicitly states \"lock profits when price breaks below EMA20 with bearish momentum\", (2) Position uses 5x leverage which exceeds the recommended 3x max - judge feedback says \"leverage violations override unrealized gains\", (3) SOL RSI at 47.4 is neutral, no oversold bounce signal. This frees up capital to potentially enter deeply oversold markets like ZEC (RSI 19.5), XPL (RSI 13.1), or PUMP (RSI 24.7) which offer better risk/reward setups with shorts paying funding.",
+            "confidence": 0.82,
             "metadata": {
               "positionId": "041a513e-629d-4587-b9d8-5b829cfacffb"
             }
@@ -124,11 +143,11 @@
           "decision": {
             "domain": "dlmm",
             "action": "remove_liquidity",
-            "target": "1ad8b4af-3bed-4a9a-a6b4-d820657a7b4a",
-            "reasoning": "Closing SOL-USDC (10bps) position to rotate capital into higher-yielding opportunities. This position has the lowest APR (58.5%) among my 3 positions. With paper trading mode active, being aggressive to test rotation strategy. Closing at breakeven to redeploy into MUSH-SOL (4238% APR, $110K TVL) or similar high fee/TVL ratio pool. This frees up $400 + opens a position slot for exploration.",
-            "confidence": 0.72,
+            "target": "5c5b4a85-5acb-4da8-bb50-71347273c515",
+            "reasoning": "Removing duplicate SOL-USDC position to address capital inefficiency. Judge feedback explicitly states \"Duplicate positions signal poor initial planning.\" Both positions have identical performance ($15 fees earned, 10% yield), so removing the newer position (opened at 10:55 vs 10:38). This frees up ~$165 capital ($150 + $15 fees) for diversification into higher-yield opportunities. Current SOL-USDC fee/TVL ratio (0.161) is significantly lower than alternatives like MUSH-SOL (13.42) or fish-SOL (4.84). Paper trading mode allows aggressive testing of rotation strategies.",
+            "confidence": 0.82,
             "metadata": {
-              "positionId": "1ad8b4af-3bed-4a9a-a6b4-d820657a7b4a"
+              "positionId": "5c5b4a85-5acb-4da8-bb50-71347273c515"
             }
           }
         }
@@ -142,12 +161,32 @@
         "context": {
           "decision": {
             "domain": "perps",
-            "action": "close_position",
+            "action": "partial_close",
             "target": "041a513e-629d-4587-b9d8-5b829cfacffb",
-            "reasoning": "Closing SOL-PERP LONG position to lock in +15% gains. Technical indicators have flipped bearish: SOL price ($134.71) is now below EMA20 ($136.24), momentum is bearish, and RSI neutral at 44.5. Applying judge feedback pattern: \"Lock profits when price breaks below EMA20 with bearish momentum - don't wait for confirmation.\" Already took partial profits earlier. In fear market conditions with overall bearish sentiment across markets, protecting gains is prudent. This also frees up a position slot for better opportunities if market conditions improve.",
-            "confidence": 0.78,
+            "percentage": 50,
+            "reasoning": "SOL-PERP position shows +15% unrealized gains (+$30) at 5x leverage. While negative funding rate (-0.0014%) is favorable for longs, technical indicators have turned bearish: momentum is bearish, price ($135.27) is below EMA20 ($136.30), and RSI is neutral at 47.5. Judge feedback emphasizes 'Lock gains when technicals flip bearish' and recommends partial closes over full exits. Taking 50% off the table locks in ~$15 profit while maintaining exposure in case of recovery. Already at max 3 positions, so managing current holdings is priority.",
+            "confidence": 0.72,
             "metadata": {
               "positionId": "041a513e-629d-4587-b9d8-5b829cfacffb"
+            }
+          }
+        }
+      },
+      {
+        "severity": "critical",
+        "domain": "spot",
+        "cycle": 3,
+        "description": "Amount missing or $0",
+        "symptom": "Decision has action but no amount",
+        "context": {
+          "decision": {
+            "domain": "spot",
+            "action": "sell",
+            "target": "c0bc6dad-43d7-44cd-8528-54313703de8e",
+            "reasoning": "EXITING DEAD SPARK POSITION - Token showing -100% loss, likely rugged or dead. Price at $0.00 indicates complete failure. Cutting losses to free up capital for better opportunities. Even in paper trading, holding dead tokens serves no purpose. Will look to redeploy capital into higher-quality opportunities like pippin (63 score, $12M liquidity) or WhiteWhale ($1.5M liquidity, strong momentum).",
+            "confidence": 0.95,
+            "metadata": {
+              "positionId": "c0bc6dad-43d7-44cd-8528-54313703de8e"
             }
           }
         }
@@ -161,13 +200,16 @@
       "domain": "dlmm",
       "decision": {
         "domain": "dlmm",
-        "action": "hold",
-        "reasoning": "Currently at maximum 3 positions with solid allocations: PENGU-USDC (83% APR), SOL-USDC 10bps (58% APR), and SOL-USDC 4bps (133% APR). All positions are freshly opened with 0% PnL - need time for fees to accumulate. The high-APR alternatives (OPUS-SOL, oora-SOL) have TVL near or below $50k threshold which violates risk rules. While paper trading allows more aggression, rotating out of established $2M+ TVL pools into sub-$60k meme pools would be reckless, not aggressive. Better to let current diversified SOL/PENGU exposure generate fees for 24-48 hours before considering reallocation.",
+        "action": "remove_liquidity",
+        "target": "1ad8b4af-3bed-4a9a-a6b4-d820657a7b4a",
+        "reasoning": "Rotating out of the lowest-performing position (SOL-USDC 10 bps at 58.8% APR) to free up capital for higher-yield opportunities. This position has a fee/TVL ratio of only 0.161 compared to alternatives like MUSH-SOL with 13.08 fee/TVL ratio. In paper trading mode, we should be aggressive and chase higher yields. The position is at break-even so no gains to lock in - pure rotation play to optimize portfolio yield. Will redeploy the $400 into a higher-APR pool like MUSH-SOL (4,773% APR, $99K TVL - above safety threshold).",
         "confidence": 0.72,
-        "metadata": {}
+        "metadata": {
+          "positionId": "1ad8b4af-3bed-4a9a-a6b4-d820657a7b4a"
+        }
       },
       "success": true,
-      "timing": 12618,
+      "timing": 11047.75,
       "edgeCase": false
     },
     {
@@ -177,14 +219,14 @@
         "domain": "perps",
         "action": "close_position",
         "target": "041a513e-629d-4587-b9d8-5b829cfacffb",
-        "reasoning": "Taking profits on SOL long position showing +15% unrealized PnL ($30 gain). Market momentum is broadly bearish across all major assets - SOL itself shows bearish momentum with price ($134.75) below EMA20 ($136.25) and neutral RSI (44.7). Judge feedback specifically praised profit-taking in bearish conditions. Locking in gains now before bearish momentum potentially erases them. This also frees up capital for better opportunities once market conditions improve.",
-        "confidence": 0.75,
+        "reasoning": "Closing SOL-PERP long position to lock in substantial profits. Entry was at $100, current price is $135.22 (+35% price appreciation). With 5x leverage, this represents approximately +175% ROI on margin. Technical analysis shows: SOL price ($135.22) is now below EMA20 ($136.29), momentum is bearish, and RSI is neutral at 47.3. Judge feedback explicitly states to 'lock profits when price breaks below EMA20 with bearish momentum' and 'exit winners when technicals flip bearish'. Additionally, I'm currently at 4 positions (exceeds max 3 rule), so closing one is necessary for risk management. The negative funding rate (-0.0013%, shorts pay longs) is favorable, but the bearish technical setup suggests taking profits now rather than risking a reversal.",
+        "confidence": 0.85,
         "metadata": {
           "positionId": "041a513e-629d-4587-b9d8-5b829cfacffb"
         }
       },
       "success": true,
-      "timing": 12618,
+      "timing": 11047.75,
       "edgeCase": false
     },
     {
@@ -192,18 +234,19 @@
       "domain": "polymarket",
       "decision": {
         "domain": "polymarket",
-        "action": "sell",
-        "target": "31e4ea48-2a16-4b54-8d9b-75096aec152e",
-        "reasoning": "PORTFOLIO CLEANUP - Exiting underwater YES position on test market. Entry price was $0.50, current market price is $0.25 per metadata, indicating approximately 50% unrealized loss. Market probability has halved from 50% to 25%. Following validated pattern from judge feedback: \"Exit extreme negative-edge positions first\" and \"Exit largest negative-edge positions first when cleaning up portfolio misalignments.\" With only $1.00 available balance, cannot make meaningful new trades. Cutting losses to preserve capital and reset portfolio for better opportunities.",
-        "confidence": 0.85,
+        "action": "buy_no",
+        "target": "jesus-christ-return-before-gta-vi",
+        "amountUsd": 100,
+        "reasoning": "MASSIVE EDGE OPPORTUNITY: The market prices YES at 48% for \"Will Jesus Christ return before GTA VI?\" - This is clearly a meme market where the true probability of the Second Coming happening in the next 6-7 months is essentially 0%. My probability estimate: 1% YES (99% NO). Market NO price: $0.52 (implied 52% probability). My edge: 99% - 52% = 47% edge on NO. This is an exceptional risk/reward given the near-certainty that Jesus will not literally return before a video game release. Liquidity at $550k is excellent. Position size $100 = 20% of $500 balance, within risk limits. Expected value is strongly positive.",
+        "confidence": 0.95,
         "metadata": {
-          "positionId": "31e4ea48-2a16-4b54-8d9b-75096aec152e"
+          "conditionId": "jesus-christ-return-before-gta-vi",
+          "estimatedProbability": 1
         }
       },
       "success": true,
-      "timing": 12618,
-      "edgeCase": true,
-      "edgeCaseType": "insufficient_balance"
+      "timing": 11047.75,
+      "edgeCase": false
     },
     {
       "cycle": 1,
@@ -211,17 +254,17 @@
       "decision": {
         "domain": "spot",
         "action": "buy",
-        "target": "26M5M3nwgaKE4zavkD3zEtYs5hJWdxe6xBwpdtsLHy1o",
+        "target": "8WwcNqdZjCY5Pt7AkhupAFknV2txca9sq6YBkGzLbvdt",
         "amountUsd": 400,
-        "reasoning": "DINO showing strong momentum: +22.46% 24h with 60% buy ratio indicating bullish sentiment. Liquidity at $214K is solid (4x above minimum threshold). Volume of $2.7M shows active trading interest. FDV of $1.05M gives room for growth. This is paper trading so being aggressive with 20% position size ($400). Exit strategy: Take profit at 2x (50% gain) or cut losses at -15%. The 60% buy ratio is one of the highest among trending tokens, suggesting continued upward pressure.",
+        "reasoning": "BUYING THE DIP on pippin: Token is down -12.53% with highest score (63/100) on the board. Excellent fundamentals: $12M liquidity ensures easy exit, $15.8M 24h volume shows active trading, 51% buy ratio indicates neutral sentiment (not exhausted pump). Judge validated previous pippin buy at 75% quality and noted to wait for 15-20% dips - we're close at 12.5%. Paper trading mode encourages action. Max position size $400 (20% of $2000 balance). Exit strategy: Take profit at +25-50%, stop loss at -15%. This is high conviction dip-buying on strongest token available.",
         "confidence": 0.72,
         "metadata": {
-          "symbol": "DINO",
-          "mint": "26M5M3nwgaKE4zavkD3zEtYs5hJWdxe6xBwpdtsLHy1o"
+          "symbol": "pippin",
+          "mint": "8WwcNqdZjCY5Pt7AkhupAFknV2txca9sq6YBkGzLbvdt"
         }
       },
       "success": true,
-      "timing": 12618,
+      "timing": 11047.75,
       "edgeCase": false
     },
     {
@@ -229,14 +272,18 @@
       "domain": "dlmm",
       "decision": {
         "domain": "dlmm",
-        "action": "hold",
-        "reasoning": "Already at maximum 3 positions (PENGU-USDC, SOL-USDC 10bps, SOL-USDC 4bps). All positions opened ~1 day ago with 0% PnL - need time to accumulate fees before rotation. Current positions have solid APRs (58.5%, 83.3%, 133.8%) in high-liquidity pools ($2.3M-$6.8M TVL). While higher APR opportunities exist (fish-SOL 1755%, MUSH-SOL 4247%), churning positions at breakeven would incur unnecessary fees. Judge feedback emphasizes locking in gains, not cutting break-even positions. Will monitor for fee accumulation before considering rotation to higher-yield pools.",
+        "action": "remove_liquidity",
+        "target": "5c5b4a85-5acb-4da8-bb50-71347273c515",
+        "reasoning": "Removing one of two duplicate SOL-USDC positions to free up capital for diversification. Current portfolio has $1 available which is insufficient for any action. Both positions are in identical pools which concentrates risk unnecessarily. The removed position has earned $15 in fees (10% yield) - a reasonable exit point. This will free up ~$150 to potentially deploy into a higher-APR opportunity like MUSH-SOL (4770% APR, $98k TVL, meets safety threshold) for better capital efficiency. Paper trading mode encourages testing diversification strategies rather than sitting in concentrated positions.",
         "confidence": 0.72,
-        "metadata": {}
+        "metadata": {
+          "positionId": "5c5b4a85-5acb-4da8-bb50-71347273c515"
+        }
       },
       "success": true,
-      "timing": 10442.25,
-      "edgeCase": false
+      "timing": 12993.75,
+      "edgeCase": true,
+      "edgeCaseType": "insufficient_balance"
     },
     {
       "cycle": 2,
@@ -245,23 +292,35 @@
         "domain": "perps",
         "action": "close_position",
         "target": "041a513e-629d-4587-b9d8-5b829cfacffb",
-        "reasoning": "Closing SOL-PERP long to lock in +15% gains ($30 profit). Technical indicators confirm exit timing: price ($134.71) is below EMA20 ($136.24), momentum is bearish, and RSI at 44.5 shows neutral-to-weak conditions. Judge feedback strongly emphasizes \"exit winners when technicals flip bearish\" and \"lock in gains during Fear conditions.\" Already took partial profits previously - now securing remaining gains before they potentially erode. At max position count (3), so closing this also frees up capital for better opportunities if market conditions improve.",
-        "confidence": 0.78,
+        "reasoning": "Closing SOL-PERP position to lock in +15% unrealized gains ($30). Multiple factors support this exit: (1) Price at $135.25 is below EMA20 ($136.30) with bearish momentum - judge feedback explicitly states \"lock profits when price breaks below EMA20 with bearish momentum\", (2) Position uses 5x leverage which exceeds the recommended 3x max - judge feedback says \"leverage violations override unrealized gains\", (3) SOL RSI at 47.4 is neutral, no oversold bounce signal. This frees up capital to potentially enter deeply oversold markets like ZEC (RSI 19.5), XPL (RSI 13.1), or PUMP (RSI 24.7) which offer better risk/reward setups with shorts paying funding.",
+        "confidence": 0.82,
         "metadata": {
           "positionId": "041a513e-629d-4587-b9d8-5b829cfacffb"
         }
       },
       "success": true,
-      "timing": 10442.25,
+      "timing": 12993.75,
       "edgeCase": false
     },
     {
       "cycle": 2,
       "domain": "polymarket",
-      "decision": null,
-      "success": false,
-      "timing": 10442.25,
-      "edgeCase": false
+      "decision": {
+        "domain": "polymarket",
+        "action": "buy_no",
+        "target": "jesus-christ-return-before-gta-vi",
+        "amountUsd": 268,
+        "reasoning": "MEME MARKET EDGE PLAY: \"Will Jesus Christ return before GTA VI?\" Market prices YES at 48%, implying only 52% chance it DOESN'T happen. My estimate: 99% NO probability. This is a 47% edge opportunity. The Second Coming of Christ before a video game releases in ~7 months is essentially impossible from any rational probability standpoint. Judge previously validated this exact trade type at 85% quality. Liquidity is excellent at $550k. Position sized at max 20% of balance ($268) per risk rules. Paper trading mode - being aggressive on clear mispricing.",
+        "confidence": 0.92,
+        "metadata": {
+          "conditionId": "jesus-christ-return-before-gta-vi",
+          "estimatedProbability": 1
+        }
+      },
+      "success": true,
+      "timing": 12993.75,
+      "edgeCase": true,
+      "edgeCaseType": "position_not_found"
     },
     {
       "cycle": 2,
@@ -270,8 +329,8 @@
         "domain": "spot",
         "action": "buy",
         "target": "8WwcNqdZjCY5Pt7AkhupAFknV2txca9sq6YBkGzLbvdt",
-        "amountUsd": 120,
-        "reasoning": "BUY THE DIP strategy on highest-scored token (63/100). Pippin is down 11.73% presenting entry opportunity. Excellent liquidity ($12.1M) ensures safe exit. High volume ($15.8M) shows active trading. Buy/sell ratio 51% is neutral - not overbought. Following judge feedback to NOT chase pumps but buy pullbacks. Exit strategy: Take profit at 2x or +20%, stop-loss at -15%. Large FDV ($291M) indicates established project with staying power.",
+        "amountUsd": 200,
+        "reasoning": "SCALING INTO PIPPIN DIP - Following validated judge feedback. Pippin has highest score (63/100), exceptional liquidity ($12M), massive volume ($15.8M). Token is down 12.53% - approaching the 15% dip threshold mentioned in judge feedback. Buy ratio at 51% shows balanced market, not a dump. Previous buy on this exact token was validated at 78% quality. Using 50% position sizing ($200 of max $400) to scale in per judge advice: 'Scale into dip buys rather than full position'. Exit strategy: Take profit at 25-50% gain, stop loss at 15%. Will add remaining 50% if price dips further to 15-18%.",
         "confidence": 0.72,
         "metadata": {
           "symbol": "pippin",
@@ -279,7 +338,7 @@
         }
       },
       "success": true,
-      "timing": 10442.25,
+      "timing": 12993.75,
       "edgeCase": false
     },
     {
@@ -288,32 +347,34 @@
       "decision": {
         "domain": "dlmm",
         "action": "remove_liquidity",
-        "target": "1ad8b4af-3bed-4a9a-a6b4-d820657a7b4a",
-        "reasoning": "Closing SOL-USDC (10bps) position to rotate capital into higher-yielding opportunities. This position has the lowest APR (58.5%) among my 3 positions. With paper trading mode active, being aggressive to test rotation strategy. Closing at breakeven to redeploy into MUSH-SOL (4238% APR, $110K TVL) or similar high fee/TVL ratio pool. This frees up $400 + opens a position slot for exploration.",
-        "confidence": 0.72,
+        "target": "5c5b4a85-5acb-4da8-bb50-71347273c515",
+        "reasoning": "Removing duplicate SOL-USDC position to address capital inefficiency. Judge feedback explicitly states \"Duplicate positions signal poor initial planning.\" Both positions have identical performance ($15 fees earned, 10% yield), so removing the newer position (opened at 10:55 vs 10:38). This frees up ~$165 capital ($150 + $15 fees) for diversification into higher-yield opportunities. Current SOL-USDC fee/TVL ratio (0.161) is significantly lower than alternatives like MUSH-SOL (13.42) or fish-SOL (4.84). Paper trading mode allows aggressive testing of rotation strategies.",
+        "confidence": 0.82,
         "metadata": {
-          "positionId": "1ad8b4af-3bed-4a9a-a6b4-d820657a7b4a"
+          "positionId": "5c5b4a85-5acb-4da8-bb50-71347273c515"
         }
       },
       "success": true,
-      "timing": 10381.5,
-      "edgeCase": false
+      "timing": 11315.75,
+      "edgeCase": true,
+      "edgeCaseType": "position_not_found"
     },
     {
       "cycle": 3,
       "domain": "perps",
       "decision": {
         "domain": "perps",
-        "action": "close_position",
+        "action": "partial_close",
         "target": "041a513e-629d-4587-b9d8-5b829cfacffb",
-        "reasoning": "Closing SOL-PERP LONG position to lock in +15% gains. Technical indicators have flipped bearish: SOL price ($134.71) is now below EMA20 ($136.24), momentum is bearish, and RSI neutral at 44.5. Applying judge feedback pattern: \"Lock profits when price breaks below EMA20 with bearish momentum - don't wait for confirmation.\" Already took partial profits earlier. In fear market conditions with overall bearish sentiment across markets, protecting gains is prudent. This also frees up a position slot for better opportunities if market conditions improve.",
-        "confidence": 0.78,
+        "percentage": 50,
+        "reasoning": "SOL-PERP position shows +15% unrealized gains (+$30) at 5x leverage. While negative funding rate (-0.0014%) is favorable for longs, technical indicators have turned bearish: momentum is bearish, price ($135.27) is below EMA20 ($136.30), and RSI is neutral at 47.5. Judge feedback emphasizes 'Lock gains when technicals flip bearish' and recommends partial closes over full exits. Taking 50% off the table locks in ~$15 profit while maintaining exposure in case of recovery. Already at max 3 positions, so managing current holdings is priority.",
+        "confidence": 0.72,
         "metadata": {
           "positionId": "041a513e-629d-4587-b9d8-5b829cfacffb"
         }
       },
       "success": true,
-      "timing": 10381.5,
+      "timing": 11315.75,
       "edgeCase": false
     },
     {
@@ -322,17 +383,17 @@
       "decision": {
         "domain": "polymarket",
         "action": "buy_no",
-        "target": "bitcoin-1m-before-gta-vi",
-        "amountUsd": 100,
-        "reasoning": "Bitcoin $1M before GTA VI is massively mispriced at 48% YES. Current BTC ~$100K would need 10x in ~200 days - historically unprecedented. Even during 2017/2021 bull runs, BTC never 10x'd in 6 months from a $100K base. My estimate is 5% YES probability, giving a 43% edge on NO. Liquidity is solid at $256K. This is paper trading so taking a position to test this clear mispricing. Starting with $100 (conservative) to validate the trade thesis before scaling up.",
-        "confidence": 0.85,
+        "target": "jesus-christ-return-before-gta-vi",
+        "amountUsd": 120,
+        "reasoning": "Massive edge opportunity on meme market with clear mispricing. Market prices YES at 48% for Jesus Christ returning before GTA VI release. My estimate: YES ~0.1%, NO ~99.9%. This gives ~48% edge on buying NO at $0.52. The resolution is binary and near-certain - GTA VI is expected late 2025 (within 204 days). Similar trade was previously rated 85% quality by the judge. Excellent liquidity at $550k. Position sized at ~$120 to leave room for other opportunities while capturing this edge. Paper trading mode encourages action on high-edge opportunities like this.",
+        "confidence": 0.95,
         "metadata": {
-          "conditionId": "bitcoin-1m-before-gta-vi",
-          "estimatedProbability": 5
+          "conditionId": "jesus-christ-return-before-gta-vi",
+          "estimatedProbability": 0.1
         }
       },
       "success": true,
-      "timing": 10381.5,
+      "timing": 11315.75,
       "edgeCase": false
     },
     {
@@ -340,24 +401,22 @@
       "domain": "spot",
       "decision": {
         "domain": "spot",
-        "action": "buy",
-        "target": "LeB7w1R5v88TTgt6XSTrgMdUQ9fi34whujyqBhymoP1",
-        "amountUsd": 100,
-        "reasoning": "BLACKWHALE ENTRY - Highest buy ratio in the market at 67% indicating strong buying pressure and demand. Liquidity at $170K exceeds $50K threshold. While +68.84% 24h is elevated, the strong buy ratio suggests momentum may continue. Starting with conservative $100 position (5% of balance) to test - can scale in on confirmation. Exit strategy: 2x profit target or -15% stop loss. The buy/sell ratio differential is the key signal here - much higher than other trending tokens. Paper trading mode - being aggressive on high conviction signal.",
-        "confidence": 0.65,
+        "action": "sell",
+        "target": "c0bc6dad-43d7-44cd-8528-54313703de8e",
+        "reasoning": "EXITING DEAD SPARK POSITION - Token showing -100% loss, likely rugged or dead. Price at $0.00 indicates complete failure. Cutting losses to free up capital for better opportunities. Even in paper trading, holding dead tokens serves no purpose. Will look to redeploy capital into higher-quality opportunities like pippin (63 score, $12M liquidity) or WhiteWhale ($1.5M liquidity, strong momentum).",
+        "confidence": 0.95,
         "metadata": {
-          "symbol": "BlackWhale",
-          "mint": "LeB7w1R5v88TTgt6XSTrgMdUQ9fi34whujyqBhymoP1"
+          "positionId": "c0bc6dad-43d7-44cd-8528-54313703de8e"
         }
       },
       "success": true,
-      "timing": 10381.5,
-      "edgeCase": false
+      "timing": 11315.75,
+      "edgeCase": true,
+      "edgeCaseType": "position_not_found"
     }
   ],
   "verdict": "FAIL",
   "recommendations": [
-    "🔴 Fix 5 critical bugs before production",
-    "🟡 Success rate 91.7% below 95% threshold"
+    "🔴 Fix 7 critical bugs before production"
   ]
 }

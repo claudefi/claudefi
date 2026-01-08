@@ -39,7 +39,7 @@ interface McpTool {
 const perpsDecisionSchema = z.object({
   action: z.enum(['open_long', 'open_short', 'close_position', 'partial_close', 'hold']),
   symbol: z.string().optional(),
-  amount_usd: z.number().positive().optional(),
+  amountUsd: z.number().positive().describe('Position size in USD - REQUIRED for open/close actions'),
   percentage: z.number().min(1).max(100).optional(),
   leverage: z.number().min(1).max(10).optional(),
   position_id: z.string().optional(),
@@ -307,7 +307,7 @@ Required fields:
 
 For open_long/open_short:
 - symbol: The market to trade (e.g., BTC, ETH, SOL)
-- amount_usd: Margin amount (position size = margin * leverage)
+- amountUsd: Position size in USD (REQUIRED - margin = amountUsd / leverage)
 - leverage: 1-10x (recommend 3-5x)
 
 For close_position/partial_close:
@@ -328,7 +328,7 @@ IMPORTANT: Only close positions that exist in your current context. Do not attem
           domain: 'perps',
           action: decision.action,
           target,
-          amountUsd: decision.amount_usd,
+          amountUsd: decision.amountUsd,
           percentage: decision.percentage,
           reasoning: decision.reasoning,
           confidence: decision.confidence,

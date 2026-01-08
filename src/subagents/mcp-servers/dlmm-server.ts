@@ -39,7 +39,7 @@ interface McpTool {
 const dlmmDecisionSchema = z.object({
   action: z.enum(['add_liquidity', 'remove_liquidity', 'partial_remove', 'hold']),
   pool_address: z.string().optional(),
-  amount_usd: z.number().positive().optional(),
+  amountUsd: z.number().positive().describe('Amount in USD - REQUIRED for add/remove actions'),
   percentage: z.number().min(1).max(100).optional(),
   strategy: z.enum(['spot', 'curve', 'bid-ask']).optional(),
   position_id: z.string().optional(),
@@ -201,7 +201,7 @@ Required fields:
 
 For add_liquidity:
 - pool_address: The pool to add liquidity to
-- amount_usd: How much to add
+- amountUsd: How much to add (REQUIRED)
 - strategy: 'spot' (tight range), 'curve' (bell curve), or 'bid-ask' (wide range)
 
 For remove_liquidity/partial_remove:
@@ -223,7 +223,7 @@ IMPORTANT: Only remove liquidity from positions that exist in your current conte
           domain: 'dlmm',
           action: decision.action,
           target,
-          amountUsd: decision.amount_usd,
+          amountUsd: decision.amountUsd,
           percentage: decision.percentage,
           reasoning: decision.reasoning,
           confidence: decision.confidence,

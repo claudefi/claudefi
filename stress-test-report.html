@@ -180,14 +180,14 @@
 <body>
   <div class="header">
     <h1>Claudefi Stress Test Report</h1>
-    <p class="timestamp">2026-01-08T10:40:44.675Z</p>
+    <p class="timestamp">2026-01-08T10:58:07.442Z</p>
     <div class="verdict fail">FAIL</div>
   </div>
 
   <div class="metrics">
     <div class="metric-card">
       <h3>Success Rate</h3>
-      <div class="value">91.7%</div>
+      <div class="value">100.0%</div>
     </div>
     <div class="metric-card">
       <h3>Total Cycles</h3>
@@ -195,11 +195,11 @@
     </div>
     <div class="metric-card">
       <h3>Avg Cycle Time</h3>
-      <div class="value">44.6s</div>
+      <div class="value">47.1s</div>
     </div>
     <div class="metric-card">
       <h3>P95 Cycle Time</h3>
-      <div class="value">50.5s</div>
+      <div class="value">52.0s</div>
     </div>
   </div>
 
@@ -223,7 +223,7 @@
             <td class="status-pass">3</td>
             <td class="">0</td>
             <td>100.0%</td>
-            <td>11.1s</td>
+            <td>11.8s</td>
           </tr>
         
           <tr>
@@ -232,16 +232,16 @@
             <td class="status-pass">3</td>
             <td class="">0</td>
             <td>100.0%</td>
-            <td>11.1s</td>
+            <td>11.8s</td>
           </tr>
         
           <tr>
             <td><strong>POLYMARKET</strong></td>
             <td>3</td>
-            <td class="status-warn">2</td>
-            <td class="status-fail">1</td>
-            <td>66.7%</td>
-            <td>11.1s</td>
+            <td class="status-pass">3</td>
+            <td class="">0</td>
+            <td>100.0%</td>
+            <td>11.8s</td>
           </tr>
         
           <tr>
@@ -250,7 +250,7 @@
             <td class="status-pass">3</td>
             <td class="">0</td>
             <td>100.0%</td>
-            <td>11.1s</td>
+            <td>11.8s</td>
           </tr>
         
     </tbody>
@@ -265,11 +265,17 @@
   </ul>
 
   <h2>Edge Cases</h2>
-  <p>Attempted: <strong>1</strong> | Handled: <strong>1</strong></p>
+  <p>Attempted: <strong>4</strong> | Handled: <strong>4</strong></p>
 
   
     <h2>Critical Bugs</h2>
-    <p style="margin-bottom: 16px;">Found 5 critical issues</p>
+    <p style="margin-bottom: 16px;">Found 7 critical issues</p>
+    
+      <div class="bug">
+        <strong>DLMM - Cycle 1</strong><br>
+        Amount missing or $0<br>
+        <em>Symptom: Decision has action but no amount</em>
+      </div>
     
       <div class="bug">
         <strong>PERPS - Cycle 1</strong><br>
@@ -278,7 +284,7 @@
       </div>
     
       <div class="bug">
-        <strong>POLYMARKET - Cycle 1</strong><br>
+        <strong>DLMM - Cycle 2</strong><br>
         Amount missing or $0<br>
         <em>Symptom: Decision has action but no amount</em>
       </div>
@@ -301,6 +307,12 @@
         <em>Symptom: Decision has action but no amount</em>
       </div>
     
+      <div class="bug">
+        <strong>SPOT - Cycle 3</strong><br>
+        Amount missing or $0<br>
+        <em>Symptom: Decision has action but no amount</em>
+      </div>
+    
   
 
   
@@ -308,7 +320,7 @@
   <div class="recommendations">
     <h2>Recommendations</h2>
     <ul>
-      <li>Fix 5 critical bugs before production</li><li>Success rate 91.7% below 95% threshold</li>
+      <li>Fix 7 critical bugs before production</li>
     </ul>
   </div>
 

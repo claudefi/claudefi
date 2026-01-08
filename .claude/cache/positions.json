@@ -23,7 +23,7 @@
       },
       "partialHistory": [],
       "closed": false,
-      "updatedAt": "2026-01-08T10:40:04.044Z"
+      "updatedAt": "2026-01-08T10:57:23.036Z"
     },
     "f4f4d5dd-3de0-4ef7-92bf-0a9a5e5f2af6": {
       "position": {
@@ -48,7 +48,7 @@
       },
       "partialHistory": [],
       "closed": false,
-      "updatedAt": "2026-01-08T10:40:04.044Z"
+      "updatedAt": "2026-01-08T10:57:23.036Z"
     },
     "041a513e-629d-4587-b9d8-5b829cfacffb": {
       "position": {
@@ -77,7 +77,43 @@
       },
       "partialHistory": [],
       "closed": false,
-      "updatedAt": "2026-01-08T10:40:04.044Z"
+      "updatedAt": "2026-01-08T10:57:23.036Z"
+    },
+    "6d9fd368-44c1-435e-8585-a03e3f1f3280": {
+      "position": {
+        "id": "6d9fd368-44c1-435e-8585-a03e3f1f3280",
+        "domain": "perps",
+        "target": "SOL-PERP",
+        "targetName": "SOL-PERP",
+        "entryValueUsd": 200,
+        "currentValueUsd": 0,
+        "status": "closed",
+        "side": "LONG",
+        "size": 0,
+        "entryPrice": 100,
+        "currentPrice": 100,
+        "openedAt": "2026-01-08T10:55:40.804+00:00",
+        "closedAt": "2026-01-08T10:56:22.904Z",
+        "realizedPnl": 0,
+        "metadata": {
+          "side": "LONG",
+          "symbol": "SOL-PERP",
+          "leverage": 5,
+          "entryPrice": 100,
+          "currentPrice": 115,
+          "unrealizedPnl": 30
+        }
+      },
+      "partialHistory": [
+        {
+          "timestamp": "2026-01-08T10:56:22.744Z",
+          "proportion": 1,
+          "realizedValueUsd": 200,
+          "realizedPnlUsd": 0
+        }
+      ],
+      "closed": true,
+      "updatedAt": "2026-01-08T10:56:22.904Z"
     }
   },
   "dlmm": {
@@ -107,7 +143,35 @@
       },
       "partialHistory": [],
       "closed": false,
-      "updatedAt": "2026-01-08T10:40:04.072Z"
+      "updatedAt": "2026-01-08T10:57:23.032Z"
+    },
+    "5c5b4a85-5acb-4da8-bb50-71347273c515": {
+      "position": {
+        "id": "5c5b4a85-5acb-4da8-bb50-71347273c515",
+        "domain": "dlmm",
+        "target": "SOL-USDC-100",
+        "targetName": "SOL-USDC (100 bps)",
+        "entryValueUsd": 150,
+        "currentValueUsd": 150,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-08T10:55:40.641+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "tokenX": "SOL",
+          "tokenY": "USDC",
+          "strategy": "spot",
+          "feesEarned": 15,
+          "poolAddress": "TEST_POOL_SOL_USDC"
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T10:57:23.032Z"
     }
   },
   "spot": {
@@ -177,6 +241,41 @@
       ],
       "closed": true,
       "updatedAt": "2026-01-08T10:39:14.037Z"
+    },
+    "af0b241a-8b56-42b6-aa21-524f7a878e69": {
+      "position": {
+        "id": "af0b241a-8b56-42b6-aa21-524f7a878e69",
+        "domain": "spot",
+        "target": "DINO_MINT_ADDRESS",
+        "targetName": "DINO",
+        "entryValueUsd": 100,
+        "currentValueUsd": 0,
+        "status": "closed",
+        "side": null,
+        "size": 1000,
+        "entryPrice": 0.1,
+        "currentPrice": 0.1,
+        "openedAt": "2026-01-08T10:55:41.114+00:00",
+        "closedAt": "2026-01-08T10:56:24.611Z",
+        "realizedPnl": 0,
+        "metadata": {
+          "mint": "DINO_MINT_ADDRESS",
+          "amount": 1000,
+          "symbol": "DINO",
+          "entryPrice": 0.1,
+          "currentPrice": 0.15
+        }
+      },
+      "partialHistory": [
+        {
+          "timestamp": "2026-01-08T10:56:24.464Z",
+          "proportion": 1,
+          "realizedValueUsd": 100,
+          "realizedPnlUsd": 0
+        }
+      ],
+      "closed": true,
+      "updatedAt": "2026-01-08T10:56:24.611Z"
     }
   },
   "polymarket": {
@@ -215,6 +314,42 @@
       ],
       "closed": true,
       "updatedAt": "2026-01-08T10:39:13.037Z"
+    },
+    "3c47c50f-b690-4abf-9e57-fb28f25ae431": {
+      "position": {
+        "id": "3c47c50f-b690-4abf-9e57-fb28f25ae431",
+        "domain": "polymarket",
+        "target": "CONDITION_TEST_123",
+        "targetName": "Test Market Question",
+        "entryValueUsd": 100,
+        "currentValueUsd": 0,
+        "status": "closed",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0.5,
+        "currentPrice": 0.5,
+        "openedAt": "2026-01-08T10:55:40.95+00:00",
+        "closedAt": "2026-01-08T10:56:23.705Z",
+        "realizedPnl": 0,
+        "metadata": {
+          "shares": 200,
+          "outcome": "YES",
+          "question": "Will test pass?",
+          "entryPrice": 0.5,
+          "conditionId": "CONDITION_TEST_123",
+          "currentPrice": 0.25
+        }
+      },
+      "partialHistory": [
+        {
+          "timestamp": "2026-01-08T10:56:23.554Z",
+          "proportion": 1,
+          "realizedValueUsd": 100,
+          "realizedPnlUsd": 0
+        }
+      ],
+      "closed": true,
+      "updatedAt": "2026-01-08T10:56:23.705Z"
     }
   }
 }

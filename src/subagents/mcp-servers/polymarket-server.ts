@@ -39,7 +39,7 @@ interface McpTool {
 const polymarketDecisionSchema = z.object({
   action: z.enum(['buy_yes', 'buy_no', 'sell', 'partial_sell', 'hold']),
   condition_id: z.string().optional(),
-  amount_usd: z.number().positive().optional(),
+  amountUsd: z.number().positive().describe('Amount in USD - REQUIRED for buy/sell actions'),
   percentage: z.number().min(1).max(100).optional(),
   position_id: z.string().optional(),
   estimated_probability: z.number().min(0).max(100).optional(),
@@ -369,7 +369,7 @@ Required fields:
 
 For buy_yes/buy_no:
 - condition_id: The market to trade
-- amount_usd: How much to spend
+- amountUsd: How much to spend (REQUIRED)
 - estimated_probability: Your probability estimate (0-100%)
 
 For sell/partial_sell:
@@ -390,7 +390,7 @@ IMPORTANT: Only sell positions that exist in your current context. Do not attemp
           domain: 'polymarket',
           action: decision.action,
           target,
-          amountUsd: decision.amount_usd,
+          amountUsd: decision.amountUsd,
           percentage: decision.percentage,
           reasoning: decision.reasoning,
           confidence: decision.confidence,

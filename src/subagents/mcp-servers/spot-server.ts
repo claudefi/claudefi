@@ -41,7 +41,7 @@ const spotDecisionSchema = z.object({
   action: z.enum(['buy', 'sell', 'partial_sell', 'hold']),
   mint: z.string().optional(),
   symbol: z.string().optional(),
-  amount_usd: z.number().positive().optional(),
+  amountUsd: z.number().positive().describe('Amount in USD - REQUIRED for buy/sell actions'),
   percentage: z.number().min(1).max(100).optional(),
   position_id: z.string().optional(),
   reasoning: z.string().min(10),
@@ -292,13 +292,13 @@ Higher score = more attractive for trading.`,
       description: 'Simulate a token swap to check price impact and output.',
       inputSchema: z.object({
         mint: z.string(),
-        amount_usd: z.number().positive(),
+        amountUsd: z.number().positive(),
         direction: z.enum(['buy', 'sell']).default('buy'),
       }),
       handler: async (args) => {
-        const { mint, amount_usd, direction } = args as {
+        const { mint, amountUsd, direction } = args as {
           mint: string;
-          amount_usd: number;
+          amountUsd: number;
           direction: 'buy' | 'sell';
         };
 
@@ -308,7 +308,7 @@ Higher score = more attractive for trading.`,
         const simulation = await jupiterClient.simulateSwap({
           inputMint,
           outputMint,
-          amountUsd: amount_usd,
+          amountUsd,
           slippageBps: 100, // 1%
         });
 
@@ -328,7 +328,7 @@ Higher score = more attractive for trading.`,
             type: 'text' as const,
             text: JSON.stringify({
               direction,
-              input_amount: `$${amount_usd.toFixed(2)}`,
+              input_amount: `$${amountUsd.toFixed(2)}`,
               output_amount: `$${simulation.outputAmountUsd.toFixed(2)}`,
               price_impact: `${(simulation.priceImpact * 100).toFixed(2)}%`,
               warning: simulation.priceImpact > 0.02 ? 'HIGH PRICE IMPACT - consider smaller size' : null,
@@ -354,7 +354,7 @@ Required fields:
 For buy:
 - mint: The token mint address to buy
 - symbol: The token symbol (for reference)
-- amount_usd: How much to spend
+- amountUsd: How much to spend (REQUIRED)
 
 For sell/partial_sell:
 - position_id: The position ID from your current "Open Positions" context (use the 'id' field, not 'target')
@@ -374,7 +374,7 @@ IMPORTANT: Only sell positions that exist in your current context. Do not attemp
           domain: 'spot',
           action: decision.action,
           target,
-          amountUsd: decision.amount_usd,
+          amountUsd: decision.amountUsd,
           percentage: decision.percentage,
           reasoning: decision.reasoning,
           confidence: decision.confidence,
