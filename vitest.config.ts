@@ -5,7 +5,13 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.test.ts'],
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    testTimeout: 30000,
+    hookTimeout: 30000,
+    // Run test files sequentially to avoid SQLite state pollution
+    fileParallelism: false,
+    // Each test file gets isolated sequence
+    sequence: {
+      hooks: 'list',
+    },
   },
 });

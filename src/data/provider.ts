@@ -324,3 +324,20 @@ export async function listInstalledCommunitySkills(): Promise<string[]> {
   }
   return prismaDb.listInstalledCommunitySkills();
 }
+
+// =============================================================================
+// TEST UTILITIES
+// =============================================================================
+
+/**
+ * Reset database to clean state for testing.
+ * Only works with Prisma backend - Supabase tests use remote DB.
+ */
+export async function resetTestData(defaultBalance = 1000): Promise<void> {
+  if (usingSupabase()) {
+    // For Supabase, we can't easily reset - tests need to handle cleanup
+    console.warn('[Test] resetTestData not available for Supabase. Use DATA_PROVIDER=prisma for tests.');
+    return;
+  }
+  await prismaDb.resetTestData(defaultBalance);
+}

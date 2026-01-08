@@ -1032,3 +1032,52 @@ export async function updateAgentConfig(updates: {
     },
   });
 }
+
+// =============================================================================
+// TEST UTILITIES (only use in test environment)
+// =============================================================================
+
+/**
+ * Reset database to clean state for testing.
+ * Only call this in test files - it clears all positions and resets balances.
+ */
+export async function resetTestData(defaultBalance = 1000): Promise<void> {
+  // Reset all balances to default
+  const config = await prisma.agentConfig.findFirst();
+  if (config) {
+    await prisma.agentConfig.update({
+      where: { id: config.id },
+      data: {
+        dlmmBalance: defaultBalance,
+        perpsBalance: defaultBalance,
+        polymarketBalance: defaultBalance,
+        spotBalance: defaultBalance,
+      },
+    });
+  }
+
+  // Close all open positions (mark as closed with zero PnL)
+  await prisma.position.updateMany({
+    where: { status: 'open' },
+    data: {
+      status: 'closed',
+      currentValueUsd: 0,
+      realizedPnl: 0,
+      closedAt: new Date(),
+    },
+  });
+
+  // Delete test positions (those with TEST_ in target)
+  await prisma.position.deleteMany({
+    where: {
+      target: { contains: 'TEST_' },
+    },
+  });
+
+  // Delete test decisions
+  await prisma.decision.deleteMany({
+    where: {
+      target: { contains: 'TEST_' },
+    },
+  });
+}
