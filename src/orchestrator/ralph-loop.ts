@@ -34,6 +34,7 @@ import {
   type DecisionOutcome,
 } from '../skills/skill-creator.js';
 import { analyzeAndCreateGeneralSkills } from '../skills/cross-domain-patterns.js';
+import { recordSkillOutcome } from '../skills/skill-outcome.js';
 import { executeAllSubagentsParallel } from '../subagents/executor.js';
 import { hookRegistry } from '../hooks/index.js';
 import {
@@ -108,13 +109,29 @@ export async function recordTradeOutcome(
     return;
   }
 
-  outcome.outcome = pnl >= 0 ? 'profit' : 'loss';
+  const isProfit = pnl >= 0;
+  outcome.outcome = isProfit ? 'profit' : 'loss';
   outcome.pnl = pnl;
   outcome.pnlPercent = pnlPercent;
 
   console.log(`\n📊 Trade closed: ${outcome.domain}/${outcome.target}`);
   console.log(`   P&L: $${pnl.toFixed(2)} (${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(1)}%)`);
 
+  // Record skill outcomes and update effectiveness (Phase 1)
+  try {
+    const skillResult = await recordSkillOutcome(
+      decisionId,
+      isProfit ? 'profit' : 'loss',
+      pnlPercent
+    );
+    if (skillResult.skillsUpdated > 0) {
+      console.log(`   📊 Updated ${skillResult.skillsUpdated} skill recommendations`);
+    }
+  } catch (error) {
+    console.warn('   ⚠️ Skill outcome recording failed:', error);
+  }
+
+  // Generate skill from significant outcome (existing logic)
   const skill = await processTradeOutcome(outcome);
 
   if (skill) {
@@ -263,6 +280,18 @@ export async function runRalphLoop(
       console.warn('   ⚠️  Transcript rotation failed:', error);
     }
 
+    // 0.2. MEMORY SYNC - Extract validated judge insights to memory (Phase 2)
+    try {
+      const { syncAllDomainInsights } = await import('../learning/insight-extractor.js');
+      const syncResults = await syncAllDomainInsights();
+      const totalSynced = Object.values(syncResults).reduce((a, b) => a + b, 0);
+      if (totalSynced > 0) {
+        console.log(`   Memory sync: ${totalSynced} insights promoted`);
+      }
+    } catch (error) {
+      console.warn('   ⚠️  Memory sync failed:', error);
+    }
+
     // 0.5. PORTFOLIO COORDINATION - Get cross-domain directive
     let portfolioDirective: PortfolioDirective | undefined;
     try {
@@ -406,6 +435,19 @@ export async function runRalphLoop(
         }
       } catch (error) {
         console.warn('   ⚠️ Cross-domain analysis failed:', error);
+      }
+    }
+
+    // 4.6. LEARNING PROMOTION - Run promotion pipelines every 5 cycles (Phase 3)
+    if (cycleCount % 5 === 0) {
+      try {
+        const { runPromotionPipeline } = await import('../learning/promotion.js');
+        const result = await runPromotionPipeline();
+        if (result.insightsToMemory > 0 || result.patternsToSkills > 0) {
+          console.log(`   Promoted: ${result.insightsToMemory} to memory, ${result.patternsToSkills} to skills`);
+        }
+      } catch (error) {
+        console.warn('   ⚠️ Promotion pipeline failed:', error);
       }
     }
 

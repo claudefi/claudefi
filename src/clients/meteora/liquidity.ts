@@ -2,7 +2,7 @@
  * Meteora DLMM Liquidity Integration
  * Handles adding and removing liquidity from Meteora dynamic liquidity pools
  *
- * Based on proven patterns from ClaudeFi
+ * Meteora DLMM liquidity management
  */
 
 import {

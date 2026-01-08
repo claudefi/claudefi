@@ -1,5 +1,5 @@
 /**
- * Perps Domain Prompts - Ported from ClaudeFi
+ * Perps Domain Prompts
  * Rich context with technical indicators for perpetual futures
  */
 

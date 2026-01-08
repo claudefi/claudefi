@@ -1,6 +1,6 @@
 /**
  * Claudefi Shared Types
- * Ported from ClaudeFi backend/src/domains/base/types.ts
+ * Core domain types for ClaudeFi
  */
 
 // =============================================================================

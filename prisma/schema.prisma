@@ -87,27 +87,53 @@ model PerformanceSnapshot {
 
 // Skill reflection metadata for tracking learning effectiveness
 model SkillReflection {
-  id                 String   @id @default(uuid())
-  skillName          String   // e.g., "avoid-low-liquidity-pools"
-  skillPath          String   // .claude/skills/xxx.md
-  domain             String
-  sourceType         String   // warning, pattern, strategy
-  triggerDecisionId  String?  // decision that triggered skill creation
-  triggerPnl         Float?   // P&L that triggered the skill
-  triggerPnlPct      Float?   // P&L % that triggered the skill
-  effectivenessScore Float?   // 0-1, updated over time
-  timesApplied       Int      @default(0)
-  successCount       Int      @default(0)
-  failureCount       Int      @default(0)
-  lastApplied        DateTime?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  metadata           String   @default("{}") // JSON for additional data
+  id                  String    @id @default(uuid())
+  skillName           String    // e.g., "avoid-low-liquidity-pools"
+  skillPath           String    // .claude/skills/xxx.md
+  domain              String
+  sourceType          String    // warning, pattern, strategy
+  triggerDecisionId   String?   // decision that triggered skill creation
+  triggerPnl          Float?    // P&L that triggered the skill
+  triggerPnlPct       Float?    // P&L % that triggered the skill
+  effectivenessScore  Float?    // 0-1, updated over time
+  timesApplied        Int       @default(0)
+  successCount        Int       @default(0)
+  failureCount        Int       @default(0)
+  lastApplied         DateTime?
+  provenEffective     Boolean   @default(false) // Has >=3 applications with >=50% success
+  qualifiedAt         DateTime? // When skill became proven effective
+  consecutiveFailures Int       @default(0) // Track failure streaks
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  metadata            String    @default("{}") // JSON for additional data
 
   @@unique([skillName, domain])
   @@index([domain])
   @@index([sourceType])
   @@index([effectivenessScore])
+  @@index([provenEffective])
+}
+
+// Skill recommendation tracking - links skill presentation to trade outcome
+model SkillRecommendation {
+  id                   String    @id @default(uuid())
+  decisionId           String    // Reference to Decision
+  skillName            String
+  domain               String
+  relevanceScore       Float     // 0-1, how relevant this skill was to the decision
+  wasPresented         Boolean   @default(true) // Was shown in prompt
+  wasApplied           Boolean   @default(false) // Was explicitly used in reasoning
+  agentQuote           String?   // Quote where agent referenced the skill
+  tradeOutcome         String?   // profit, loss, pending
+  pnlPercent           Float?    // Realized P&L %
+  contributedToSuccess Boolean?  // Did skill help the trade succeed?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([decisionId])
+  @@index([skillName, domain])
+  @@index([wasApplied])
+  @@index([tradeOutcome])
 }
 
 // Telegram subscribers for alerts
@@ -123,33 +149,38 @@ model TelegramSubscriber {
 
 // Decision evaluations from judge (for learning loop)
 model DecisionEvaluation {
-  id                String   @id @default(uuid())
-  decisionId        String   // Reference to Decision
+  id                String    @id @default(uuid())
+  decisionId        String    // Reference to Decision
   domain            String
   action            String
   target            String?
 
   // Judge assessment
-  wasGoodDecision   Boolean  // Did the judge approve this decision?
-  qualityScore      Float?   // 0-1 quality rating
+  wasGoodDecision   Boolean   // Did the judge approve this decision?
+  qualityScore      Float?    // 0-1 quality rating
 
   // Judge insights (the valuable part)
-  strengths         String?  // What was done well
-  weaknesses        String?  // What could be improved
-  missedFactors     String?  // Market factors that were overlooked
-  betterApproach    String?  // What would have been better
-  keyInsight        String   // The single most important learning (required)
+  strengths         String?   // What was done well
+  weaknesses        String?   // What could be improved
+  missedFactors     String?   // Market factors that were overlooked
+  betterApproach    String?   // What would have been better
+  keyInsight        String    // The single most important learning (required)
 
   // Categorization
-  insightType       String   // 'timing', 'sizing', 'selection', 'risk', 'market_read', 'execution'
-  applicability     String   @default("domain") // 'domain', 'cross_domain', 'general'
+  insightType       String    // 'timing', 'sizing', 'selection', 'risk', 'market_read', 'execution'
+  applicability     String    @default("domain") // 'domain', 'cross_domain', 'general'
 
   // Outcome tracking
-  actualOutcome     String?  // 'profit', 'loss', 'pending'
+  actualOutcome     String?   // 'profit', 'loss', 'pending'
   actualPnlPercent  Float?
-  judgeWasRight     Boolean? // Was judge's assessment validated by outcome?
+  judgeWasRight     Boolean?  // Was judge's assessment validated by outcome?
 
-  createdAt         DateTime @default(now())
+  // Promotion tracking (Phase 3)
+  promotedToMemory  Boolean   @default(false) // Was insight added to memory?
+  promotedToSkill   Boolean   @default(false) // Was insight converted to skill?
+  promotedAt        DateTime? // When promotion occurred
+
+  createdAt         DateTime  @default(now())
 
   @@index([domain])
   @@index([insightType])
@@ -194,4 +225,21 @@ model TradeIdempotency {
 
   @@index([expiresAt])
   @@index([domain, action, target])
+}
+
+// Cross-system learning links (Phase 3)
+// Tracks promotion of insights between systems: Judge → Memory → Skills
+model LearningLink {
+  id         String   @id @default(uuid())
+  sourceType String   // 'judge', 'memory', 'skill'
+  sourceId   String   // ID in source system
+  targetType String   // 'memory', 'skill'
+  targetId   String   // ID or identifier in target system
+  linkType   String   // 'promoted', 'derived', 'superseded'
+  metadata   String   @default("{}") // JSON for additional context
+  createdAt  DateTime @default(now())
+
+  @@index([sourceType, sourceId])
+  @@index([targetType, targetId])
+  @@index([linkType])
 }

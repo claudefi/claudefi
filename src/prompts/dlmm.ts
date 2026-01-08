@@ -1,5 +1,5 @@
 /**
- * DLMM Domain Prompts - Ported from ClaudeFi
+ * DLMM Domain Prompts
  * Rich context for liquidity provision decisions
  */
 

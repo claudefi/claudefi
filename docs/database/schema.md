@@ -163,54 +163,124 @@ model DecisionEvaluation {
   qualityScore    Float?    // 0-1
   keyInsight      String    // Main lesson learned
   insightType     String    // timing, sizing, selection, risk
+  judgeWasRight   Boolean?  // Validated by outcome
 
   // Details
   strengths       String?   // JSON array
   weaknesses      String?   // JSON array
   betterApproach  String?
 
+  // Promotion tracking (for learning pipelines)
+  promotedToMemory Boolean  @default(false)
+  promotedToSkill  Boolean  @default(false)
+  promotedAt       DateTime?
+
   createdAt       DateTime  @default(now())
 
   @@index([wasGoodDecision])
   @@index([insightType])
+  @@index([promotedToMemory])
 }
 ```
 
 ### SkillReflection
 
-Skill tracking and effectiveness.
+Lesson tracking and effectiveness (reflections stored in `.claude/skills/reflections/`).
 
 ```prisma
 model SkillReflection {
   id                 String    @id @default(cuid())
 
   // Identity
-  skillName          String    @unique
+  skillName          String
+  skillPath          String
   domain             String
   sourceType         String    // warning, pattern, strategy, evolved
-  filePath           String
 
   // Effectiveness tracking
   effectivenessScore Float?    // 0-1, null if not enough data
   timesApplied       Int       @default(0)
   successCount       Int       @default(0)
   failureCount       Int       @default(0)
+  lastApplied        DateTime?
+
+  // Qualification status (for lesson recommendations)
+  provenEffective     Boolean   @default(false) // >=3 uses, >=50% success
+  qualifiedAt         DateTime?
+  consecutiveFailures Int       @default(0)
 
   // Source info
-  sourceDecisionId   String?
-  sourcePnl          Float?
-  sourcePnlPercent   Float?
+  triggerDecisionId  String?
+  triggerPnl         Float?
+  triggerPnlPct      Float?
 
   // Lifecycle
   createdAt          DateTime  @default(now())
-  expiresAt          DateTime
-  archived           Boolean   @default(false)
-  archivedAt         DateTime?
+  updatedAt          DateTime  @updatedAt
 
+  @@unique([skillName, domain])
   @@index([domain])
   @@index([sourceType])
   @@index([effectivenessScore])
-  @@index([archived])
+  @@index([provenEffective])
+}
+```
+
+### SkillRecommendation
+
+Tracks which lessons were recommended and applied per decision.
+
+```prisma
+model SkillRecommendation {
+  id                   String    @id @default(uuid())
+
+  // Links
+  decisionId           String
+  skillName            String    // Lesson name
+  domain               String
+
+  // Recommendation
+  relevanceScore       Float     // 0-1, how relevant was this lesson
+  wasPresented         Boolean   @default(true)
+  wasApplied           Boolean   @default(false)
+  agentQuote           String?   // Context of usage
+
+  // Outcome (populated when trade closes)
+  tradeOutcome         String?   // profit, loss, pending
+  pnlPercent           Float?
+  contributedToSuccess Boolean?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([decisionId])
+  @@index([skillName, domain])
+}
+```
+
+### LearningLink
+
+Tracks promotions between learning systems.
+
+```prisma
+model LearningLink {
+  id         String   @id @default(uuid())
+
+  // Source
+  sourceType String   // 'judge', 'memory', 'skill'
+  sourceId   String
+
+  // Target
+  targetType String   // 'memory', 'skill'
+  targetId   String
+
+  // Link metadata
+  linkType   String   // 'promoted', 'derived'
+  metadata   String   @default("{}")
+
+  createdAt  DateTime @default(now())
+
+  @@index([sourceType, sourceId])
 }
 ```
 
@@ -370,5 +440,6 @@ This opens a web UI at `http://localhost:5555` for browsing and editing data.
 ## Related Documentation
 
 - [Configuration](../getting-started/configuration.md) - Database config
-- [Skills System](../skills/overview.md) - Skill tracking
+- [Skills System](../skills/overview.md) - Skills & reflections
+- [Learning System](../learning/overview.md) - Lesson recommendations & promotion
 - [Architecture Overview](../architecture/overview.md) - System design

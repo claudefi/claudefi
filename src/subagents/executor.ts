@@ -10,9 +10,8 @@ import type { Domain, AgentDecision, DomainContext } from '../types/index.js';
 import { getSubagent } from './index.js';
 import { sessionStore } from './session-store.js';
 import { hookRegistry } from '../hooks/index.js';
-import { buildLearningContext, listSkills } from '../skills/skill-creator.js';
+import { SELF_AWARENESS_CONTEXT } from '../skills/skill-creator.js';
 import { synthesizeInsights, evaluateDecision } from '../learning/judge-feedback.js';
-import { recordSkillApplication } from '../db/index.js';
 import {
   formatDirectiveForPrompt,
   type PortfolioDirective,
@@ -21,6 +20,10 @@ import { formatMemoryForPrompt } from '../memory/index.js';
 import { TranscriptStore } from '../transcripts/store.js';
 import type { TranscriptEntry } from '../transcripts/types.js';
 import { createContextManager } from '../context/manager.js';
+// New skill recommendation system (Phase 1)
+import { recommendSkills, formatRecommendedSkills } from '../skills/skill-recommender.js';
+import { trackSkillUsage } from '../skills/skill-tracker.js';
+import type { QualifiedSkill, SkillMarketContext } from '../skills/types.js';
 
 // Import MCP server executors
 import { createDlmmTools, executeDlmmTool, type DlmmRuntime } from './mcp-servers/dlmm-server.js';
@@ -145,68 +148,34 @@ export function inferDecisionContext(
 }
 
 /**
- * Extract which skills were mentioned/applied in the agent's reasoning
- * This enables tracking skill effectiveness
+ * Build skill market context from domain context
  */
-async function extractAppliedSkills(
-  reasoning: string,
-  domain: Domain
-): Promise<string[]> {
-  const appliedSkills: string[] = [];
-
-  try {
-    const skills = await listSkills();
-
-    // Filter to domain-relevant skills
-    const relevantSkills = skills.filter(s =>
-      s.includes(domain) ||
-      s.includes('portfolio') ||
-      s.includes('general') ||
-      s.includes('evolved')
-    );
-
-    // Check if skill names/keywords appear in reasoning
-    for (const skill of relevantSkills) {
-      // Extract key parts of skill name (e.g., "warning-dlmm-low-tvl" -> ["warning", "dlmm", "low", "tvl"])
-      const keywords = skill
-        .replace('.md', '')
-        .split(/[-_]/)
-        .filter(k => k.length > 2);
-
-      // Check if multiple keywords from this skill appear in reasoning
-      const matchedKeywords = keywords.filter(kw =>
-        reasoning.toLowerCase().includes(kw.toLowerCase())
-      );
-
-      // If >50% of keywords match, consider skill as applied
-      if (matchedKeywords.length >= Math.ceil(keywords.length * 0.5)) {
-        appliedSkills.push(skill.replace('.md', ''));
-      }
-    }
-  } catch (error) {
-    console.warn('Could not extract applied skills:', error);
-  }
-
-  return appliedSkills;
-}
-
-/**
- * Record skill applications for tracking effectiveness
- */
-async function trackSkillApplications(
-  appliedSkills: string[],
+function buildSkillMarketContext(
   domain: Domain,
-  wasSuccessful: boolean
-): Promise<void> {
-  for (const skillName of appliedSkills) {
-    try {
-      await recordSkillApplication(skillName, domain, wasSuccessful);
-      console.log(`  📊 Tracked skill application: ${skillName}`);
-    } catch (error) {
-      // Skill might not have a reflection record yet
-      console.debug(`  Could not track ${skillName}:`, error);
-    }
-  }
+  context: DomainContext
+): SkillMarketContext {
+  // Count recent losses
+  const recentLossCount = context.recentDecisions.filter(d =>
+    d.outcome === 'loss' || (d.realizedPnl !== undefined && d.realizedPnl !== null && d.realizedPnl < 0)
+  ).length;
+
+  // Calculate recent win rate
+  const completedDecisions = context.recentDecisions.filter(d =>
+    d.outcome === 'profitable' || d.outcome === 'loss'
+  );
+  const recentWinRate = completedDecisions.length > 0
+    ? completedDecisions.filter(d => d.outcome === 'profitable').length / completedDecisions.length
+    : undefined;
+
+  return {
+    domain,
+    hasOpenPositions: context.positions.length > 0,
+    positionCount: context.positions.length,
+    recentLossCount,
+    recentWinRate,
+    // Market data varies by domain - can be extended
+    marketData: {},
+  };
 }
 
 /**
@@ -411,8 +380,16 @@ export async function executeSubagent(
   const modelConfig = selectModel(decisionCtx);
   console.log(`  📊 Model: ${modelConfig.model}, Thinking: ${modelConfig.thinkingLevel}`);
 
-  // Build system prompt with learned skills
-  const skills = await buildLearningContext(domain);
+  // Get recommended skills using new explicit tracking system
+  const skillMarketContext = buildSkillMarketContext(domain, context);
+  const skillRecommendation = await recommendSkills(domain, skillMarketContext);
+  const skillsContext = formatRecommendedSkills(skillRecommendation.recommendedSkills);
+
+  console.log(
+    `  🎯 Skills: ${skillRecommendation.recommendedSkills.length} recommended ` +
+    `(${skillRecommendation.excludedLowEffectiveness} low-eff, ${skillRecommendation.excludedLowRelevance} low-rel excluded)`
+  );
+
   const isPaperTrading = process.env.PAPER_TRADING !== 'false';
 
   const tradingModeGuidance = isPaperTrading ? `
@@ -438,7 +415,9 @@ ${tradingModeGuidance}
 
 ---
 
-${skills}
+${SELF_AWARENESS_CONTEXT}
+
+${skillsContext}
 
 ---
 
@@ -582,20 +561,38 @@ Even if you decide to HOLD, call submit_decision with action: "hold".`;
 
   // Track skill applications and evaluate decision
   if (runtime.decision) {
-    // Extract which skills influenced this decision
-    const appliedSkills = await extractAppliedSkills(runtime.decision.reasoning, domain);
+    // Generate a decision ID for tracking (will be replaced with DB ID when decision is logged)
+    const decisionId = `${domain}-${Date.now()}`;
 
-    if (appliedSkills.length > 0) {
-      console.log(`  🎯 Applied ${appliedSkills.length} skills in decision`);
-      // Track applications (wasSuccessful = true for now, updated later on outcome)
-      await trackSkillApplications(appliedSkills, domain, true);
+    // Track which recommended skills were applied using new explicit tracking
+    if (skillRecommendation.recommendedSkills.length > 0) {
+      try {
+        const trackingResult = await trackSkillUsage(
+          decisionId,
+          skillRecommendation.recommendedSkills,
+          runtime.decision.reasoning
+        );
+
+        // Store decision ID in metadata for outcome linking
+        runtime.decision.metadata = {
+          ...runtime.decision.metadata,
+          decisionId,
+          skillsPresented: skillRecommendation.recommendedSkills.map(s => s.name),
+          skillTrackingResult: {
+            recommendationsCreated: trackingResult.recommendationsCreated,
+            appliedCount: trackingResult.detections.filter(d => d.wasApplied).length,
+          },
+        };
+      } catch (error) {
+        console.warn(`[${domain}] Skill tracking failed:`, error);
+      }
     }
 
     // Evaluate the decision using judge (async, don't block)
     if (runtime.decision.action !== 'hold') {
       // Fire and forget - evaluation happens asynchronously
       evaluateDecision(
-        `${domain}-${Date.now()}`, // Temporary ID until DB returns real one
+        decisionId,
         domain,
         runtime.decision.action,
         runtime.decision.target,

@@ -1,5 +1,5 @@
 /**
- * Spot Domain Prompts - Ported from ClaudeFi
+ * Spot Domain Prompts
  * Rich context for memecoin/token trading
  */
 

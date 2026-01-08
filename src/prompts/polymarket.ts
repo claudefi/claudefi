@@ -1,5 +1,5 @@
 /**
- * Polymarket Domain Prompts - Ported from ClaudeFi
+ * Polymarket Domain Prompts
  * Rich context for prediction market trading
  */
 
