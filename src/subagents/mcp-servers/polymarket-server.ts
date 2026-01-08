@@ -373,8 +373,10 @@ For buy_yes/buy_no:
 - estimated_probability: Your probability estimate (0-100%)
 
 For sell/partial_sell:
-- position_id: The position to sell
-- percentage: (for partial_sell) What % to sell`,
+- position_id: The position ID from your current "Open Positions" context (use the 'id' field, not 'target')
+- percentage: (for partial_sell) What % to sell
+
+IMPORTANT: Only sell positions that exist in your current context. Do not attempt to sell positions from previous sessions.`,
       inputSchema: polymarketDecisionSchema,
       handler: async (args) => {
         const decision = args as z.infer<typeof polymarketDecisionSchema>;

@@ -205,8 +205,10 @@ For add_liquidity:
 - strategy: 'spot' (tight range), 'curve' (bell curve), or 'bid-ask' (wide range)
 
 For remove_liquidity/partial_remove:
-- position_id: The position to remove from
-- percentage: (for partial_remove) What % to remove`,
+- position_id: The position ID from your current "Open Positions" context (use the 'id' field, not 'target')
+- percentage: (for partial_remove) What % to remove
+
+IMPORTANT: Only remove liquidity from positions that exist in your current context. Do not attempt to close positions from previous sessions.`,
       inputSchema: dlmmDecisionSchema,
       handler: async (args) => {
         const decision = args as z.infer<typeof dlmmDecisionSchema>;

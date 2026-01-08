@@ -311,8 +311,10 @@ For open_long/open_short:
 - leverage: 1-10x (recommend 3-5x)
 
 For close_position/partial_close:
-- position_id: The position to close
-- percentage: (for partial_close) What % to close`,
+- position_id: The position ID from your current "Open Positions" context (use the 'id' field, not 'target')
+- percentage: (for partial_close) What % to close
+
+IMPORTANT: Only close positions that exist in your current context. Do not attempt to close positions from previous sessions.`,
       inputSchema: perpsDecisionSchema,
       handler: async (args) => {
         const decision = args as z.infer<typeof perpsDecisionSchema>;
