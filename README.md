@@ -1,8 +1,13 @@
 # <img src="icon.png" width="32" height="32" alt="claudefi" /> claudefi
 
-**Autonomous DeFi trading agent that learns from every trade.**
+[![Built with Claude Agent SDK](https://img.shields.io/badge/Built%20with-Claude%20Agent%20SDK-cc785c)](https://docs.anthropic.com/en/docs/agents-and-tools/claude-agent-sdk)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-claudefi runs a continuous loop across four DeFi domains—making decisions, executing trades, and generating "skills" from outcomes. Losses become warnings. Wins become patterns. The agent that runs today is smarter than the one that ran yesterday, all made possible by the claude agent sdk.
+**the open source claude agent that learns to trade defi**
+
+four domains. self-improving memory. extensible with claude code skills.
+
+claudefi runs a continuous 30-minute loop—observing markets, making decisions, executing trades, and building memory from outcomes. losses become warnings. wins become patterns. the agent that runs today is smarter than the one that ran yesterday.
 
 ## Domains
 
@@ -12,6 +17,14 @@ claudefi runs a continuous loop across four DeFi domains—making decisions, exe
 | **Perps** | Hyperliquid | Leveraged futures (max 5x) |
 | **Spot** | Jupiter | Memecoin momentum trading |
 | **Polymarket** | Polymarket | Prediction market arbitrage |
+
+## Built With
+
+- **Claude Agent SDK** - multi-turn tool conversations with full context
+- **MCP Server** - custom model context protocol exposing domain-specific trading tools
+- **Parallel Subagents** - one per domain, running concurrently
+- **Hooks System** - validation middleware for risk controls and guardrails
+- **Memory System** - self-improving from every trade outcome
 
 ## Quick Start
 
@@ -38,20 +51,36 @@ Every 30 minutes:
 2. Run parallel Claude subagents (one per domain)
 3. Validate decisions through hooks
 4. Execute approved trades
-5. Generate skills from outcomes
+5. Build memory from outcomes
 
-## Skills System
+## Memory
 
-After every trade, the agent writes a skill explaining what happened:
+after every trade, the agent builds memory from what happened:
 
 ```
 "Entered SOL pool at 847% APR. TVL dropped 40% in 2 hours.
 IL exceeded fees. Lesson: high APR without volume confirmation is a trap."
 ```
 
-Skills have TTL. Warnings expire after 60 days. Patterns last 90. The agent knows when to forget.
+memory has TTL. warnings expire after 60 days. patterns last 90. the agent knows when to forget.
 
-Similar skills merge at 70% similarity. Ineffective skills (< 30% success rate) get pruned.
+similar memories merge at 70% similarity. ineffective patterns (< 30% success rate) get pruned.
+
+## Skills
+
+claudefi is built on claude code. extend it with skills.
+
+skills are markdown files in `.claude/skills/` that teach the agent new strategies, risk rules, or domain knowledge. write your own or install from the community.
+
+```bash
+# install a community skill
+claudefi skill install @community/dlmm-rebalancing
+
+# create your own
+claudefi skill create my-strategy
+```
+
+share back what works. everyone's agent gets smarter.
 
 ## Risk Infrastructure
 
@@ -95,7 +124,7 @@ Built for unreliable networks and rate limits:
 │                    └─────┬─────┘                    │
 │                          │                          │
 │                    ┌─────▼─────┐                    │
-│                    │  Skills   │                    │
+│                    │  Memory   │                    │
 │                    │ (learn)   │                    │
 │                    └───────────┘                    │
 └─────────────────────────────────────────────────────┘
@@ -143,7 +172,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 
 ## Costs
 
-~$13/day total API usage across all four domains. Less than most signal services, except this one learns.
+~$13/day. less than most signal services. except you can tweak this one to fit your strategy.
 
 ## Sovereignty
 
@@ -152,6 +181,14 @@ Everything runs locally. Your API keys never leave your machine. No cloud, no ba
 ## Documentation
 
 Full docs at [claudefi.com](https://claudefi.com) or in the [`docs/`](./docs/) directory.
+
+## Community
+
+join the trenches.
+
+[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/nzW8srS9)
+
+share strategies. contribute skills. build together.
 
 ## License
 
