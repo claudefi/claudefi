@@ -305,6 +305,29 @@ cp .claude/skills/user/my-skill.md ~/Desktop/my-skill.md
 cp ~/Downloads/cool-skill.md .claude/skills/user/
 ```
 
+### Community Skills
+
+Share your skills with the community via GitHub:
+
+1. Fork the claudefi repo
+2. Add your skill to `skills/your-skill-name/`
+3. Follow the [SKILL.md format](https://github.com/anthropics/skills)
+4. Open a pull request
+
+See [skills/CONTRIBUTING.md](https://github.com/claudefi/claudefi/tree/main/skills/CONTRIBUTING.md) for guidelines.
+
+### Paid Skills *(Coming Soon)*
+
+Monetize your trading strategies:
+
+| Feature | Description |
+|---------|-------------|
+| **Premium Skills** | Sell your best strategies to other traders |
+| **Revenue Sharing** | Earn from skill purchases and usage |
+| **Creator Dashboard** | Track downloads, earnings, and feedback |
+
+**Interested in being an early creator?** Open an issue on GitHub to discuss.
+
 ### Skills Marketplace
 
 Coming soon: Install skills directly from the marketplace.

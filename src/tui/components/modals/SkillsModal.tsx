@@ -98,6 +98,26 @@ export const SkillsModal: React.FC<SkillsModalProps> = ({ onClose }) => {
           ))}
         </Box>
       )}
+
+      {/* Skills Marketplace */}
+      <Box marginTop={1} flexDirection="column" borderStyle="round" borderColor="gray" paddingX={1}>
+        <Box>
+          <Text bold>Skills Marketplace </Text>
+          <Text color="yellow" bold>[Coming Soon]</Text>
+        </Box>
+        <Box marginTop={1}>
+          <Text dimColor>Community skills: </Text>
+          <Text>Free, user-submitted strategies</Text>
+        </Box>
+        <Box>
+          <Text dimColor>Paid skills: </Text>
+          <Text>Premium strategies from top traders</Text>
+        </Box>
+        <Box marginTop={1}>
+          <Text dimColor>Submit yours: </Text>
+          <Text color="cyan">github.com/claudefi/claudefi/skills</Text>
+        </Box>
+      </Box>
     </Modal>
   );
 };
