@@ -52,7 +52,9 @@ prisma/claudefi.db
 # Runtime data (transcripts, memory, etc)
 .claude/transcripts/
 .claude/memory/
-.claude/cache/positions.json
+.claude/cache/
+.claude/settings.local.json
+.claude/todos/
 
 # Secrets
 *.pem

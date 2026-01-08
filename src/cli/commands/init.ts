@@ -855,6 +855,7 @@ CONFIDENCE_THRESHOLD=${config.confidenceThreshold}
 
 # Data Storage
 DATA_PROVIDER=${config.storageType === 'sqlite' ? 'prisma' : 'supabase'}
+${config.storageType === 'sqlite' ? 'DATABASE_URL="file:./claudefi.db"' : ''}
 `;
 
   if (config.storageType === 'supabase' && config.supabaseUrl && config.supabaseKey) {
