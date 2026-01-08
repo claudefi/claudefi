@@ -1,7 +1,7 @@
-# ClaudeFi Documentation Site Configuration
+# claudefi Documentation Site Configuration
 # Compatible with Jekyll/GitHub Pages and similar static site generators
 
-title: ClaudeFi
+title: claudefi
 description: Autonomous Claude agents trading across DeFi. Self-improving AI that learns from every trade.
 baseurl: /docs
 url: ""
@@ -18,7 +18,7 @@ aux_links:
   "GitHub": https://github.com/claudefi/claudefi
 
 # Footer
-footer_content: "Autonomous Claude agents across DeFi. &copy; 2025 ClaudeFi"
+footer_content: "Autonomous Claude agents across DeFi. &copy; 2025 claudefi"
 
 # Search
 search_enabled: true

@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: ClaudeFi
+  name: claudefi
   text: autonomous claude agents across defi
   tagline: self-improving ai that learns from every trade
   actions:
