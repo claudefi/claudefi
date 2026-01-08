@@ -13,6 +13,8 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
+    "test:resilience": "tsx src/test-resilience.ts",
+    "test:cycle": "tsx src/test-cycle.ts",
     "cli": "tsx src/cli/index.ts",
     "cli:init": "tsx src/cli/index.ts init",
     "cli:run": "tsx src/cli/index.ts run",
