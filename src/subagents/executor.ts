@@ -2,7 +2,7 @@
  * Subagent Executor
  *
  * Runs domain-specific subagents using Claude Agent SDK.
- * Supports parallel execution and session persistence.
+ * Supports parallel execution, session persistence, transcripts, and context pruning.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -18,6 +18,9 @@ import {
   type PortfolioDirective,
 } from './portfolio-coordinator.js';
 import { formatMemoryForPrompt } from '../memory/index.js';
+import { TranscriptStore } from '../transcripts/store.js';
+import type { TranscriptEntry } from '../transcripts/types.js';
+import { createContextManager } from '../context/manager.js';
 
 // Import MCP server executors
 import { createDlmmTools, executeDlmmTool, type DlmmRuntime } from './mcp-servers/dlmm-server.js';
@@ -71,13 +74,39 @@ const THINKING_BUDGETS: Record<ThinkingLevel, number> = {
   high: 20000,
 };
 
+// Agent SDK compatible models
+const VALID_MODELS = [
+  'claude-opus-4-5-20251101',
+  'claude-sonnet-4-20250514',
+  'claude-3-5-sonnet-20241022',
+];
+
+const DEFAULT_MODEL = 'claude-opus-4-5-20251101';
+
+// Singleton instances for transcript and context management
+const transcriptStore = new TranscriptStore();
+const contextManager = createContextManager();
+
+/**
+ * Get configured model from env or default
+ */
+function getConfiguredModel(): string {
+  const model = process.env.CLAUDE_MODEL || DEFAULT_MODEL;
+  if (!VALID_MODELS.includes(model)) {
+    console.warn(`[Model] Invalid model "${model}", using default: ${DEFAULT_MODEL}`);
+    console.warn(`[Model] Valid models: ${VALID_MODELS.join(', ')}`);
+    return DEFAULT_MODEL;
+  }
+  return model;
+}
+
 /**
  * Select appropriate model and thinking level based on decision context
  */
 export function selectModel(context: DecisionContext): ModelConfig {
-  // Always use Opus 4.5 for best quality
+  const model = getConfiguredModel();
   return {
-    model: 'claude-opus-4-5-20251101',
+    model,
     thinkingLevel: 'high',
     thinkingBudget: THINKING_BUDGETS['high'],
     maxTokens: 8000,
@@ -384,7 +413,28 @@ export async function executeSubagent(
 
   // Build system prompt with learned skills
   const skills = await buildLearningContext(domain);
+  const isPaperTrading = process.env.PAPER_TRADING !== 'false';
+
+  const tradingModeGuidance = isPaperTrading ? `
+PAPER TRADING MODE - BE AGGRESSIVE:
+- This is paper trading with simulated money - take more risks!
+- Prefer ACTION over holding when opportunities exist
+- Test strategies, explore the market, generate trading activity
+- Don't be overly conservative - we're learning, not protecting real capital
+- If confidence > 50%, consider taking the trade
+- Holding is boring - find opportunities!
+` : `
+REAL TRADING MODE - BE PRUDENT:
+- This is real money - be careful and conservative
+- Only trade with high confidence (>70%)
+- Prefer holding over risky trades
+`;
+
   const systemPrompt = `${subagent.systemPrompt}
+
+---
+
+${tradingModeGuidance}
 
 ---
 
@@ -401,8 +451,19 @@ Even if you decide to HOLD, call submit_decision with action: "hold".`;
   // Get tool definitions
   const toolDefs = getToolDefinitions(domain);
 
+  // Generate session ID for transcript logging
+  const sessionId = TranscriptStore.generateSessionId();
+
+  // Log initial user message to transcript
+  await transcriptStore.append(domain, sessionId, {
+    timestamp: new Date().toISOString(),
+    role: 'user',
+    content: userPrompt,
+    metadata: { domain },
+  });
+
   // Multi-turn conversation loop
-  const messages: Anthropic.MessageParam[] = [
+  let messages: Anthropic.MessageParam[] = [
     { role: 'user', content: userPrompt }
   ];
 
@@ -412,6 +473,16 @@ Even if you decide to HOLD, call submit_decision with action: "hold".`;
   while (turn < maxTurns) {
     turn++;
 
+    // Apply context pruning if needed
+    if (contextManager.shouldPrune(messages)) {
+      const pruneResult = contextManager.prune(messages);
+      messages = pruneResult.pruned;
+      console.log(
+        `  [${domain}] Context pruned: ${pruneResult.droppedCount} msgs dropped, ` +
+        `${pruneResult.estimatedTokensBefore} -> ${pruneResult.estimatedTokensAfter} tokens`
+      );
+    }
+
     try {
       const response = await anthropic.messages.create({
         model: modelConfig.model,
@@ -419,6 +490,18 @@ Even if you decide to HOLD, call submit_decision with action: "hold".`;
         system: systemPrompt,
         messages,
         tools: toolDefs,
+      });
+
+      // Log assistant response to transcript
+      await transcriptStore.append(domain, sessionId, {
+        timestamp: new Date().toISOString(),
+        role: 'assistant',
+        content: response.content,
+        metadata: {
+          domain,
+          model: modelConfig.model,
+          tokensUsed: response.usage?.output_tokens,
+        },
       });
 
       // Check if we need to handle tool calls
@@ -446,6 +529,20 @@ Even if you decide to HOLD, call submit_decision with action: "hold".`;
             type: 'tool_result',
             tool_use_id: toolUse.id,
             content: result,
+          });
+
+          // Log tool use and result to transcript
+          await transcriptStore.append(domain, sessionId, {
+            timestamp: new Date().toISOString(),
+            role: 'tool_use',
+            content: { name: toolUse.name, input: toolUse.input },
+            metadata: { domain, toolName: toolUse.name },
+          });
+          await transcriptStore.append(domain, sessionId, {
+            timestamp: new Date().toISOString(),
+            role: 'tool_result',
+            content: result,
+            metadata: { domain, toolName: toolUse.name },
           });
         }
 

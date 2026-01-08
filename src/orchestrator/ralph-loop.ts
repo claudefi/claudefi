@@ -46,6 +46,8 @@ import {
   perpsLiquidationMonitor,
 } from '../services/position-monitor.js';
 import type { Domain, AgentDecision, DomainContext } from '../types/index.js';
+import { idempotencyService, startIdempotencyCleanup, stopIdempotencyCleanup } from '../services/idempotency.js';
+import { TranscriptStore } from '../transcripts/store.js';
 
 // Types
 export interface CycleResult {
@@ -145,12 +147,13 @@ async function buildDomainContext(domain: Domain): Promise<DomainContext> {
 
 /**
  * Execute a decision (paper or real trading)
+ * Returns { executed: boolean, idempotencyKey?: string } for tracking
  */
 async function executeDecision(
   domain: Domain,
   decision: AgentDecision,
   paperTrading: boolean
-): Promise<boolean> {
+): Promise<{ executed: boolean; idempotencyKey?: string }> {
   console.log(`📊 Executing ${domain} decision: ${decision.action}`);
   console.log(`   Target: ${decision.target || 'N/A'}`);
   console.log(`   Amount: $${decision.amountUsd || 0}`);
@@ -159,28 +162,52 @@ async function executeDecision(
 
   if (decision.action === 'hold') {
     console.log('   Action: HOLD - No trade executed');
-    return true;
+    return { executed: true };
   }
 
-  // For opening positions, deduct from balance
-  const openActions = ['add_liquidity', 'open_long', 'open_short', 'buy_yes', 'buy_no', 'buy'];
-  if (openActions.includes(decision.action) && decision.amountUsd) {
-    const balance = await getDomainBalance(domain);
-    await updateDomainBalance(domain, balance - decision.amountUsd);
+  // Check for duplicate execution (idempotency)
+  const { isDuplicate, key, previousResult } = await idempotencyService.checkAndReserve(
+    domain,
+    decision.action,
+    decision.target,
+    decision.amountUsd
+  );
 
-    // Create position record
-    await createPosition(domain, {
-      target: decision.target || 'unknown',
-      targetName: decision.target,
-      entryValueUsd: decision.amountUsd,
-      metadata: decision.metadata,
-    });
+  if (isDuplicate) {
+    console.log(`   ⚠️  Duplicate decision detected (key: ${key.slice(0, 30)}...)`);
+    console.log(`   Skipping execution - previous result available`);
+    return { executed: false, idempotencyKey: key };
   }
 
-  console.log(`   Mode: ${paperTrading ? 'PAPER' : 'REAL'}`);
-  console.log('   ✅ Decision executed');
+  try {
+    // For opening positions, deduct from balance
+    const openActions = ['add_liquidity', 'open_long', 'open_short', 'buy_yes', 'buy_no', 'buy'];
+    if (openActions.includes(decision.action) && decision.amountUsd) {
+      const balance = await getDomainBalance(domain);
+      await updateDomainBalance(domain, balance - decision.amountUsd);
 
-  return true;
+      // Create position record
+      await createPosition(domain, {
+        target: decision.target || 'unknown',
+        targetName: decision.target,
+        entryValueUsd: decision.amountUsd,
+        metadata: decision.metadata,
+      });
+    }
+
+    console.log(`   Mode: ${paperTrading ? 'PAPER' : 'REAL'}`);
+    console.log('   ✅ Decision executed');
+
+    // Update idempotency record with success
+    await idempotencyService.updateResult(key, { status: 'success', timestamp: new Date().toISOString() });
+
+    return { executed: true, idempotencyKey: key };
+  } catch (error) {
+    // Remove the idempotency reservation so we can retry
+    await idempotencyService.remove(key);
+    console.error(`   ❌ Execution failed:`, error);
+    return { executed: false };
+  }
 }
 
 /**
@@ -206,6 +233,9 @@ export async function runRalphLoop(
     perpsLiquidationMonitor.start();
   }
 
+  // Start idempotency cleanup job (runs every hour)
+  startIdempotencyCleanup();
+
   // Continuous loop
   while (true) {
     console.log('\n' + '='.repeat(60));
@@ -220,6 +250,17 @@ export async function runRalphLoop(
       }
     } catch (error) {
       console.warn('   ⚠️  Skill expiration check failed:', error);
+    }
+
+    // 0.1. TRANSCRIPT ROTATION - Compress old transcripts, delete ancient ones
+    try {
+      const transcriptStore = new TranscriptStore();
+      const rotateResult = await transcriptStore.rotate();
+      if (rotateResult.gzipped > 0 || rotateResult.deleted > 0) {
+        console.log(`   Transcripts: ${rotateResult.gzipped} gzipped, ${rotateResult.deleted} deleted`);
+      }
+    } catch (error) {
+      console.warn('   ⚠️  Transcript rotation failed:', error);
     }
 
     // 0.5. PORTFOLIO COORDINATION - Get cross-domain directive
@@ -294,7 +335,7 @@ export async function runRalphLoop(
       }
 
       // Execute the decision
-      const executed = await executeDecision(domain, decision, cfg.paperTrading);
+      const execResult = await executeDecision(domain, decision, cfg.paperTrading);
 
       // Run PostDecision hooks (logging)
       await hookRegistry.run('PostDecision', {
@@ -330,8 +371,8 @@ export async function runRalphLoop(
       results.push({
         domain,
         decision,
-        executed,
-        outcome: executed ? 'success' : 'failed',
+        executed: execResult.executed,
+        outcome: execResult.executed ? 'success' : 'failed',
       });
     }
 
@@ -344,18 +385,14 @@ export async function runRalphLoop(
       console.log(`   ${emoji} ${result.domain.toUpperCase()}: ${result.outcome} ${result.decision?.action || ''}`);
     }
 
-    // 4. LEARN - Take performance snapshots
+    // 4. LEARN - Take performance snapshots (domain + total)
     console.log('\n📈 Taking performance snapshots...');
-    for (const domain of cfg.domains) {
-      try {
-        const portfolio = await getPortfolio();
-        const domainInfo = portfolio.domains[domain];
-        const totalValue = domainInfo?.totalValue || 0;
-        const numPositions = domainInfo?.numPositions || 0;
-        await takePerformanceSnapshot(domain, totalValue, numPositions);
-      } catch (err) {
-        console.error(`   Failed snapshot for ${domain}:`, err);
-      }
+    try {
+      const { takeAllPerformanceSnapshots } = await import('../clients/supabase/client.js');
+      await takeAllPerformanceSnapshots();
+      console.log('   ✅ Snapshots taken for all domains + total portfolio');
+    } catch (err) {
+      console.error('   ❌ Failed to take snapshots:', err);
     }
 
     // 4.5. CROSS-DOMAIN ANALYSIS - Periodically analyze patterns across domains
@@ -484,6 +521,7 @@ Features:
     console.log('\n\n🛑 Shutting down...');
     positionMonitor.stop();
     perpsLiquidationMonitor.stop();
+    stopIdempotencyCleanup();
     await disconnectDatabase();
     process.exit(0);
   };
