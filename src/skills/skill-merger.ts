@@ -13,7 +13,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { Domain } from '../types/index.js';
-import { listSkills, readSkill, SKILLS_DIR } from './skill-creator.js';
+import { listSkills, readSkill, SKILLS_DIR } from './reflection-creator.js';
 
 const ARCHIVE_DIR = path.join(SKILLS_DIR, 'archive');
 

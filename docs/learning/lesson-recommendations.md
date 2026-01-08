@@ -2,7 +2,7 @@
 
 The lesson recommendation system replaces unreliable keyword matching with explicit lesson tracking. It ensures only qualified lessons (reflections) are loaded and tracks their actual usage and effectiveness.
 
-> **Terminology**: "Lessons" and "reflections" are the auto-generated trading rules stored in `.claude/skills/reflections/` (warning-*, pattern-*, strategy-*). These are distinct from Claude Code skills which are invoked via `/skill-name`.
+> **Terminology**: "Lessons" and "reflections" are the auto-generated trading rules stored in `.claude/reflections/` (warning-*, pattern-*, strategy-*). These are distinct from Claude Code skills which are invoked via `/skill-name`.
 
 ## Qualification Criteria
 

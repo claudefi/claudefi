@@ -141,7 +141,7 @@ sequenceDiagram
 
 | System | Purpose | Storage | Lifespan |
 |--------|---------|---------|----------|
-| **Lessons** | Actionable trading rules (reflections) | `.claude/skills/reflections/*.md` | 60-180 days (TTL) |
+| **Lessons** | Actionable trading rules (reflections) | `.claude/reflections/*.md` | 60-180 days (TTL) |
 | **Memory** | Persistent domain knowledge | `MEMORY.md` | Until superseded |
 | **Judge** | Decision quality tracking | Database | Until promoted |
 

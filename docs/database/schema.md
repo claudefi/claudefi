@@ -185,7 +185,7 @@ model DecisionEvaluation {
 
 ### SkillReflection
 
-Lesson tracking and effectiveness (reflections stored in `.claude/skills/reflections/`).
+Lesson tracking and effectiveness (reflections stored in `.claude/reflections/`).
 
 ```prisma
 model SkillReflection {

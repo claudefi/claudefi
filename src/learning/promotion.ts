@@ -11,7 +11,7 @@
 import { prisma } from '../db/prisma.js';
 import type { Domain } from '../types/index.js';
 import { recall, remember } from '../memory/index.js';
-import { saveSkill, type GeneratedSkill } from '../skills/skill-creator.js';
+import { saveSkill, type GeneratedSkill } from '../skills/reflection-creator.js';
 
 // =============================================================================
 // TYPES

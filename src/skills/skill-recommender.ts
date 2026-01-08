@@ -13,7 +13,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { Domain } from '../types/index.js';
 import { getSkillReflections } from '../db/index.js';
-import { SKILLS_DIR, listSkills, readSkill } from './skill-creator.js';
+import { SKILLS_DIR, listSkills, readSkill } from './reflection-creator.js';
 import {
   type QualifiedSkill,
   type SkillMarketContext,

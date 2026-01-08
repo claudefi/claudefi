@@ -16,7 +16,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { Domain } from '../types/index.js';
 import { getRecentDecisions } from '../db/index.js';
-import { SKILLS_DIR, saveSkill, type GeneratedSkill } from './skill-creator.js';
+import { SKILLS_DIR, saveSkill, type GeneratedSkill } from './reflection-creator.js';
 
 // =============================================================================
 // TYPES

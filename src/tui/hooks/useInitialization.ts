@@ -56,7 +56,7 @@ export function useInitialization() {
       // Step 4: Skills
       dispatch({ type: 'SET_INIT_STEP', step: 'skills', status: 'loading' });
       try {
-        const { listSkills } = await import('../../skills/skill-creator.js');
+        const { listSkills } = await import('../../skills/reflection-creator.js');
         await listSkills();
         dispatch({ type: 'SET_INIT_STEP', step: 'skills', status: 'done' });
       } catch {

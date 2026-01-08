@@ -10,7 +10,7 @@ import type { Domain, AgentDecision, DomainContext } from '../types/index.js';
 import { getSubagent } from './index.js';
 import { sessionStore } from './session-store.js';
 import { hookRegistry } from '../hooks/index.js';
-import { SELF_AWARENESS_CONTEXT } from '../skills/skill-creator.js';
+import { SELF_AWARENESS_CONTEXT } from '../skills/reflection-creator.js';
 import { synthesizeInsights, evaluateDecision } from '../learning/judge-feedback.js';
 import {
   formatDirectiveForPrompt,

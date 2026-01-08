@@ -1,12 +1,18 @@
 /**
- * Skill Creator - Self-Improving Agent
+ * Reflection Creator - Self-Improving Agent
  *
- * Analyzes trading outcomes and generates new skills (markdown files)
+ * Analyzes trading outcomes and generates reflections (markdown files)
  * that help the agent avoid past mistakes and replicate successes.
+ *
+ * TERMINOLOGY:
+ * - "Reflection" = auto-generated trading lesson from outcomes
+ * - "Skill" = Claude Code skill with SKILL.md structure
+ *
+ * Reflections are stored in .claude/reflections/, NOT .claude/skills/
  *
  * ## Self-Awareness Context
  *
- * I am the skill-creator module of Claudefi, an autonomous DeFi trading agent.
+ * I am the reflection-creator module of Claudefi, an autonomous DeFi trading agent.
  * My purpose is to enable self-improvement through experience-based learning.
  *
  * ### Why I Exist
@@ -101,7 +107,9 @@ export interface GeneratedSkill {
   type: 'warning' | 'pattern' | 'strategy';
 }
 
-export const SKILLS_DIR = path.join(process.cwd(), '.claude', 'skills');
+// Reflections are auto-generated trading lessons stored in .claude/reflections/
+// Not to be confused with Claude Code skills which are in .claude/skills/
+export const SKILLS_DIR = path.join(process.cwd(), '.claude', 'reflections');
 
 /**
  * Analyze a losing trade and generate a warning skill

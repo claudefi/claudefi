@@ -18,7 +18,7 @@ export function useSkills() {
 
     try {
       // Import skill functions
-      const { listSkills, readSkill } = await import('../../skills/skill-creator.js');
+      const { listSkills, readSkill } = await import('../../skills/reflection-creator.js');
       const { getSkillReflections } = await import('../../db/index.js');
 
       // List skill files and read them

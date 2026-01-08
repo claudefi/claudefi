@@ -33,10 +33,11 @@ export interface LoadedSkill extends SkillMetadata {
   content: string;
 }
 
-// Directories to search for skills
+// Directories to search for skills and reflections
 const BUILT_IN_DIR = path.join(__dirname, '..', 'built-in');
 const USER_GENERATED_DIR = path.join(__dirname, '..', 'user-generated');
 const CLAUDE_SKILLS_DIR = path.join(process.cwd(), '.claude', 'skills');
+const REFLECTIONS_DIR = path.join(process.cwd(), '.claude', 'reflections');
 
 /**
  * Parse YAML frontmatter from a SKILL.md file
@@ -166,16 +167,23 @@ async function loadSkillsFromDirectory(
 }
 
 /**
- * Load all available skills
+ * Load all available skills and reflections
+ *
+ * Sources:
+ * - built-in: Bundled skills in src/skills/built-in/
+ * - user-generated: User-created skills
+ * - .claude/skills/: Community skills (marketplace)
+ * - .claude/reflections/: Auto-generated trading lessons
  */
 export async function loadAllSkills(): Promise<LoadedSkill[]> {
-  const [builtIn, userGenerated, claudeSkills] = await Promise.all([
+  const [builtIn, userGenerated, claudeSkills, reflections] = await Promise.all([
     loadSkillsFromDirectory(BUILT_IN_DIR, 'built-in'),
     loadSkillsFromDirectory(USER_GENERATED_DIR, 'user-generated'),
     loadSkillsFromDirectory(CLAUDE_SKILLS_DIR, 'user-generated'),
+    loadSkillsFromDirectory(REFLECTIONS_DIR, 'user-generated'),
   ]);
 
-  return [...builtIn, ...userGenerated, ...claudeSkills];
+  return [...builtIn, ...userGenerated, ...claudeSkills, ...reflections];
 }
 
 /**

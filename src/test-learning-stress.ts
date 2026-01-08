@@ -162,7 +162,7 @@ async function seedLessons(lessons: SyntheticLesson[]): Promise<void> {
       update: {},
       create: {
         skillName: lesson.name,
-        skillPath: `.claude/skills/reflections/${lesson.name}.md`,
+        skillPath: `.claude/reflections/${lesson.name}.md`,
         domain: lesson.domain,
         sourceType,
         timesApplied: 0,

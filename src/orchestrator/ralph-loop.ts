@@ -32,7 +32,7 @@ import {
   explainSkillCreation,
   archiveExpiredSkills,
   type DecisionOutcome,
-} from '../skills/skill-creator.js';
+} from '../skills/reflection-creator.js';
 import { analyzeAndCreateGeneralSkills } from '../skills/cross-domain-patterns.js';
 import { recordSkillOutcome } from '../skills/skill-outcome.js';
 import { executeAllSubagentsParallel } from '../subagents/executor.js';

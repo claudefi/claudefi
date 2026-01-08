@@ -97,8 +97,11 @@ Self-improvement system:
 
 ```
 skills/
-├── skill-creator.ts           # Generate skills from outcomes
-├── skill-merger.ts            # Deduplicate similar skills
+├── reflection-creator.ts      # Generate reflections from trade outcomes
+├── skill-merger.ts            # Deduplicate similar reflections
+├── skill-recommender.ts       # Recommend qualified lessons
+├── skill-tracker.ts           # Track lesson usage
+├── skill-outcome.ts           # Record outcomes
 └── cross-domain-patterns.ts   # Cross-domain learning
 ```
 
@@ -193,24 +196,27 @@ prisma/
 └── dev.db             # SQLite database (local)
 ```
 
-## Skills Directory (`.claude/`)
+## Claude Directory (`.claude/`)
 
-Runtime-generated skills:
+Claude Code configuration and runtime data:
 
 ```
 .claude/
-└── skills/
-    ├── archive/                    # Expired skills
-    ├── general/                    # Cross-domain skills
-    ├── warning-dlmm-*.md          # Domain warnings
-    ├── pattern-perps-*.md         # Domain patterns
-    └── strategy-polymarket-*.md   # Domain strategies
+├── skills/                         # Claude Code skills
+│   ├── skill-creator/              # Create new skills
+│   └── community/                  # Marketplace installs
+│
+└── reflections/                    # Auto-generated from trade outcomes
+    ├── archive/                    # Expired/superseded reflections
+    ├── general/                    # Cross-domain patterns
+    ├── warning-dlmm-*.md           # Domain-specific warnings
+    ├── pattern-perps-*.md          # Domain-specific patterns
+    └── strategy-polymarket-*.md    # Domain-specific strategies
 ```
 
-This directory is:
-- Git-ignored (skills are unique to each instance)
-- Auto-populated by the skill creator
-- Read by subagents at context build time
+**Skills** are Claude Code skills (SKILL.md + scripts/) - invoked via `/skill-name`.
+
+**Reflections** are auto-generated trading lessons - loaded into agent prompts based on domain and effectiveness.
 
 ## Adding New Components
 
@@ -227,9 +233,9 @@ This directory is:
 1. Add to `src/hooks/built-in.ts` or create custom file
 2. Register in `src/hooks/index.ts`
 
-### New Skill Type
+### New Reflection Type
 
-1. Update `src/skills/skill-creator.ts`
+1. Update `src/skills/reflection-creator.ts`
 2. Add TTL config if different from existing types
 
 ## Related Documentation

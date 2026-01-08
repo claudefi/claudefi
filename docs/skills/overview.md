@@ -50,14 +50,16 @@ mkdir ~/.claude/skills/my-skill
 Trading-specific skills live in the claudefi project:
 
 ```
-.claude/skills/
-├── user/                    # User-created trading skills
-│   ├── analyze-pool.md
-│   └── custom-alerts.md
-└── reflections/             # Auto-generated from outcomes
-    ├── warning-*.md
-    ├── pattern-*.md
-    └── strategy-*.md
+.claude/
+├── skills/                  # Claude Code skills
+│   ├── skill-creator/       # Create new skills
+│   └── community/           # Marketplace installs
+│
+└── reflections/             # Auto-generated from trade outcomes
+    ├── warning-*.md         # Loss prevention
+    ├── pattern-*.md         # Success replication
+    ├── strategy-*.md        # Comprehensive playbooks
+    └── archive/             # Expired/superseded
 ```
 
 ### Built-in Trading Skills
