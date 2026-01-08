@@ -1,9 +1,14 @@
 # <img src="icon.png" width="32" height="32" alt="claudefi" /> claudefi
 
+[![npm](https://img.shields.io/npm/v/claudefi)](https://www.npmjs.com/package/claudefi)
 [![Built with Claude Agent SDK](https://img.shields.io/badge/Built%20with-Claude%20Agent%20SDK-cc785c)](https://docs.anthropic.com/en/docs/agents-and-tools/claude-agent-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **the open source claude agent that learns to trade defi**
+
+```bash
+bunx claudefi
+```
 
 four domains. self-improving memory. extensible with claude code skills.
 
@@ -29,25 +34,21 @@ claudefi runs a continuous 30-minute loop—observing markets, making decisions,
 ## Quick Start
 
 ```bash
-# bun (recommended)
-bunx claudefi init
-bunx claudefi start
-
-# node
-npx claudefi init
-npx claudefi start
-
-# docker
-docker run -e ANTHROPIC_API_KEY=sk-... claudefi/claudefi
-
-# from source
-git clone https://github.com/claudefi/claudefi
-cd claudefi && bun install  # or: npm install
-cp .env.example .env        # add ANTHROPIC_API_KEY
-bun run ralph               # or: npm run ralph
+bunx claudefi
 ```
 
-Paper trading is on by default. Watch it think before risking real money.
+that's it. paper trading is on by default.
+
+<details>
+<summary>from source</summary>
+
+```bash
+git clone https://github.com/claudefi/claudefi
+cd claudefi && bun i
+cp .env.example .env  # add ANTHROPIC_API_KEY
+bun run ralph
+```
+</details>
 
 ## The Ralph Loop
 

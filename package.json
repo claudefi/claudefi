@@ -16,8 +16,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup src/cli/index.ts --format esm --dts --clean",
-    "build:tsc": "tsc",
+    "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "start": "bun run src/orchestrator/ralph-loop.ts",
     "start:node": "npx tsx src/orchestrator/ralph-loop.ts",
@@ -37,6 +36,9 @@
     "test:cycle": "tsx src/test-cycle.ts",
     "test:stress": "tsx src/test-e2e-stress.ts",
     "test:stress:memory": "tsx src/test-e2e-stress.ts --cycles=10 --focus=memory",
+    "backfill": "tsx scripts/backfill-historical-data.ts",
+    "backfill:dry-run": "tsx scripts/backfill-historical-data.ts --dry-run",
+    "backfill:clear": "tsx scripts/backfill-historical-data.ts --clear",
     "cli": "tsx src/cli/index.ts",
     "cli:init": "tsx src/cli/index.ts init",
     "cli:run": "tsx src/cli/index.ts run",
@@ -94,7 +96,7 @@
     "@types/node": "^22.10.7",
     "@types/react": "^18.3.17",
     "mermaid": "^11.12.2",
-    "tsup": "^8.0.0",
+    "tsup": "^8.5.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitepress": "^1.6.4",

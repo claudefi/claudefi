@@ -47,18 +47,10 @@ claudefi runs a continuous 30-minute decision cycle called the **ralph loop**:
 ## quick start
 
 ```bash
-# clone
-git clone https://github.com/claudefi/claudefi
-cd claudefi
-
-# install & configure
-npm install
-cp .env.example .env
-# add your ANTHROPIC_API_KEY
-
-# run (paper trading)
-npm run ralph
+bunx claudefi
 ```
+
+that's it. paper trading is on by default.
 
 ## trading domains
 
