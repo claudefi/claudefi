@@ -4,7 +4,14 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { Domain, Position, PerformanceSnapshot, DecisionHistory, Portfolio } from '../../types/index.js';
+import type {
+  Domain,
+  Position,
+  PerformanceSnapshot,
+  DecisionHistory,
+  Portfolio,
+} from '../../types/index.js';
+import type { AgentWallets, PendingPosition, CommunitySkillRecord } from '../../types/internal.js';
 
 let supabaseInstance: SupabaseClient | null = null;
 
@@ -26,6 +33,77 @@ export function getSupabase(): SupabaseClient {
     supabaseInstance = createClient(url, key);
   }
   return supabaseInstance;
+}
+
+export async function getAgentWallets(agentId?: string): Promise<AgentWallets | null> {
+  const supabase = getSupabase();
+
+  let query = supabase
+    .from('agent_config')
+    .select('solana_wallet_pubkey, hyperliquid_wallet, polygon_wallet')
+    .limit(1);
+
+  if (agentId) {
+    query = query.eq('id', agentId);
+  }
+
+  const { data, error } = await query.single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    solana_wallet_pubkey: data.solana_wallet_pubkey || undefined,
+    hyperliquid_wallet: data.hyperliquid_wallet || undefined,
+    polygon_wallet: data.polygon_wallet || undefined,
+  };
+}
+
+export async function registerAgentWallet(
+  agentId: string,
+  walletType: 'solana' | 'hyperliquid' | 'polygon',
+  walletAddress: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = getSupabase();
+
+  const columnMap = {
+    solana: 'solana_wallet_pubkey',
+    hyperliquid: 'hyperliquid_wallet',
+    polygon: 'polygon_wallet',
+  };
+
+  const { error } = await supabase
+    .from('agent_config')
+    .update({
+      [columnMap[walletType]]: walletAddress,
+      wallet_verified_at: new Date().toISOString(),
+    })
+    .eq('id', agentId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+export async function markAgentAsVerifiedTrader(agentId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = getSupabase();
+
+  const { error } = await supabase
+    .from('agent_config')
+    .update({
+      verified_trader: true,
+      wallet_verified_at: new Date().toISOString(),
+    })
+    .eq('id', agentId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
 }
 
 // =============================================================================
@@ -214,6 +292,67 @@ export async function createPosition(
   }
 
   return data.id;
+}
+
+export async function getPendingPositionsForVerification(): Promise<PendingPosition[]> {
+  const supabase = getSupabase();
+
+  const tableMap: Record<Domain, { table: string; idField: string }> = {
+    dlmm: { table: 'dlmm_positions', idField: 'id' },
+    perps: { table: 'perps_positions', idField: 'id' },
+    polymarket: { table: 'polymarket_positions', idField: 'id' },
+    spot: { table: 'spot_positions', idField: 'id' },
+  };
+
+  const results: PendingPosition[] = [];
+
+  for (const domain of Object.keys(tableMap) as Domain[]) {
+    const config = tableMap[domain];
+    const column = domain === 'perps' ? 'order_id' : 'tx_hash';
+
+    const { data } = await supabase
+      .from(config.table)
+      .select(`${config.idField}, ${column}, opened_at`)
+      .eq('verified', false)
+      .not(column, 'is', null);
+
+    (data || []).forEach((row: any) => {
+      const tx_hash = row[column];
+      if (!tx_hash) return;
+
+      results.push({
+        domain,
+        id: row[config.idField],
+        tx_hash,
+        opened_at: row.opened_at,
+      });
+    });
+  }
+
+  return results;
+}
+
+export async function markPositionVerified(domain: Domain, positionId: string): Promise<void> {
+  const supabase = getSupabase();
+
+  const tableMap: Record<Domain, string> = {
+    dlmm: 'dlmm_positions',
+    perps: 'perps_positions',
+    polymarket: 'polymarket_positions',
+    spot: 'spot_positions',
+  };
+
+  const { error } = await supabase
+    .from(tableMap[domain])
+    .update({
+      verified: true,
+      verified_at: new Date().toISOString(),
+    })
+    .eq('id', positionId);
+
+  if (error) {
+    console.error(`Failed to mark ${domain} position ${positionId} as verified:`, error);
+  }
 }
 
 /**
@@ -478,6 +617,140 @@ export async function getPerformanceSnapshots(domain: Domain | null, limit = 50)
     weeklyPnl: parseFloat(row.weekly_pnl || '0'),
     totalPnl: parseFloat(row.total_pnl || '0'),
   }));
+}
+
+function mapCommunitySkillRow(row: any): CommunitySkillRecord {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    author: row.author || undefined,
+    githubUrl: row.github_url || undefined,
+    domain: row.domain || undefined,
+    downloads: row.downloads || 0,
+    rating: row.rating || 0,
+    version: row.version || '1.0.0',
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+export async function fetchCommunitySkills(options: {
+  domain?: string;
+  limit?: number;
+  sortBy?: 'downloads' | 'rating' | 'updated_at';
+} = {}): Promise<CommunitySkillRecord[]> {
+  const supabase = getSupabase();
+  const { domain, limit = 50, sortBy = 'downloads' } = options;
+  const orderColumn = sortBy === 'updated_at' ? 'updated_at' : sortBy;
+
+  let query = supabase
+    .from('community_skills')
+    .select('*')
+    .order(orderColumn, { ascending: false })
+    .limit(limit);
+
+  if (domain) {
+    query = query.eq('domain', domain);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  return data.map(mapCommunitySkillRow);
+}
+
+export async function searchCommunitySkills(queryText: string): Promise<CommunitySkillRecord[]> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('community_skills')
+    .select('*')
+    .or(`name.ilike.%${queryText}%,description.ilike.%${queryText}%`)
+    .order('downloads', { ascending: false })
+    .limit(20);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map(mapCommunitySkillRow);
+}
+
+export async function getCommunitySkillRecord(name: string): Promise<CommunitySkillRecord | null> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('community_skills')
+    .select('*')
+    .eq('name', name)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapCommunitySkillRow(data);
+}
+
+export async function incrementCommunitySkillDownloads(skillName: string): Promise<void> {
+  const supabase = getSupabase();
+  await supabase.rpc('increment_skill_downloads', { skill_name: skillName });
+}
+
+export async function registerCommunitySkill(skill: {
+  name: string;
+  description: string;
+  author: string;
+  githubUrl: string;
+  domain?: string;
+}): Promise<CommunitySkillRecord | null> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('community_skills')
+    .insert({
+      name: skill.name,
+      description: skill.description,
+      author: skill.author,
+      github_url: skill.githubUrl,
+      domain: skill.domain,
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapCommunitySkillRow(data);
+}
+
+export async function trackSkillInstallation(skillName: string): Promise<void> {
+  const supabase = getSupabase();
+  await supabase
+    .from('user_skills')
+    .insert({ skill_name: skillName })
+    .select()
+    .maybeSingle();
+}
+
+export async function untrackSkillInstallation(skillName: string): Promise<void> {
+  const supabase = getSupabase();
+  await supabase
+    .from('user_skills')
+    .delete()
+    .eq('skill_name', skillName);
+}
+
+export async function listInstalledCommunitySkills(): Promise<string[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('user_skills')
+    .select('skill_name');
+
+  if (error || !data) return [];
+  return data.map((row: any) => row.skill_name as string);
 }
 
 // =============================================================================

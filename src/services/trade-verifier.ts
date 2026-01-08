@@ -8,8 +8,15 @@
  * - Polymarket: Polygon transaction signatures
  */
 
-import { getSupabase } from '../clients/supabase/client.js';
 import type { Domain } from '../types/index.js';
+import type { AgentWallets, PendingPosition } from '../types/internal.js';
+import {
+  getAgentWallets as providerGetAgentWallets,
+  getPendingPositionsForVerification,
+  markPositionVerified as providerMarkPositionVerified,
+  registerAgentWallet as providerRegisterAgentWallet,
+  markAgentAsVerifiedTrader as providerMarkAgentVerified,
+} from '../data/provider.js';
 
 // =============================================================================
 // TYPES
@@ -19,19 +26,6 @@ interface VerificationResult {
   verified: boolean;
   error?: string;
   details?: Record<string, unknown>;
-}
-
-interface PendingPosition {
-  domain: Domain;
-  id: string;
-  tx_hash: string;
-  opened_at: string;
-}
-
-interface AgentWallets {
-  solana_wallet_pubkey?: string;
-  hyperliquid_wallet?: string;
-  polygon_wallet?: string;
 }
 
 // =============================================================================
@@ -259,113 +253,6 @@ export async function verifyPolygonTransaction(
 /**
  * Get agent's wallet addresses
  */
-async function getAgentWallets(agentId?: string): Promise<AgentWallets | null> {
-  const supabase = getSupabase();
-
-  let query = supabase
-    .from('agent_config')
-    .select('solana_wallet_pubkey, hyperliquid_wallet, polygon_wallet');
-
-  if (agentId) {
-    query = query.eq('id', agentId);
-  }
-
-  const { data, error } = await query.single();
-
-  if (error || !data) {
-    console.error('Failed to get agent wallets:', error);
-    return null;
-  }
-
-  return data;
-}
-
-/**
- * Get all positions pending verification
- */
-async function getPendingPositions(): Promise<PendingPosition[]> {
-  const supabase = getSupabase();
-
-  // DLMM positions
-  const { data: dlmmData } = await supabase
-    .from('dlmm_positions')
-    .select('id, tx_hash, opened_at')
-    .eq('verified', false)
-    .not('tx_hash', 'is', null);
-
-  // Perps positions
-  const { data: perpsData } = await supabase
-    .from('perps_positions')
-    .select('id, order_id, opened_at')
-    .eq('verified', false)
-    .not('order_id', 'is', null);
-
-  // Polymarket positions
-  const { data: polyData } = await supabase
-    .from('polymarket_positions')
-    .select('id, tx_hash, opened_at')
-    .eq('verified', false)
-    .not('tx_hash', 'is', null);
-
-  // Spot positions
-  const { data: spotData } = await supabase
-    .from('spot_positions')
-    .select('id, tx_hash, opened_at')
-    .eq('verified', false)
-    .not('tx_hash', 'is', null);
-
-  const positions: PendingPosition[] = [];
-
-  (dlmmData || []).forEach((p) =>
-    positions.push({ domain: 'dlmm', id: p.id, tx_hash: p.tx_hash, opened_at: p.opened_at })
-  );
-  (perpsData || []).forEach((p) =>
-    positions.push({ domain: 'perps', id: p.id, tx_hash: p.order_id, opened_at: p.opened_at })
-  );
-  (polyData || []).forEach((p) =>
-    positions.push({
-      domain: 'polymarket',
-      id: p.id,
-      tx_hash: p.tx_hash,
-      opened_at: p.opened_at,
-    })
-  );
-  (spotData || []).forEach((p) =>
-    positions.push({ domain: 'spot', id: p.id, tx_hash: p.tx_hash, opened_at: p.opened_at })
-  );
-
-  // Sort by opened_at ascending
-  return positions.sort(
-    (a, b) => new Date(a.opened_at).getTime() - new Date(b.opened_at).getTime()
-  );
-}
-
-/**
- * Mark a position as verified
- */
-async function markPositionVerified(domain: Domain, positionId: string): Promise<void> {
-  const supabase = getSupabase();
-
-  const tableMap: Record<Domain, string> = {
-    dlmm: 'dlmm_positions',
-    perps: 'perps_positions',
-    polymarket: 'polymarket_positions',
-    spot: 'spot_positions',
-  };
-
-  const { error } = await supabase
-    .from(tableMap[domain])
-    .update({
-      verified: true,
-      verified_at: new Date().toISOString(),
-    })
-    .eq('id', positionId);
-
-  if (error) {
-    console.error(`Failed to mark ${domain} position ${positionId} as verified:`, error);
-  }
-}
-
 /**
  * Verify a single position based on its domain
  */
@@ -406,13 +293,13 @@ export async function runVerificationLoop(): Promise<{
   failed: number;
   errors: string[];
 }> {
-  const wallets = await getAgentWallets();
+  const wallets = await providerGetAgentWallets();
 
   if (!wallets) {
     return { verified: 0, failed: 0, errors: ['No agent wallets configured'] };
   }
 
-  const pendingPositions = await getPendingPositions();
+  const pendingPositions = await getPendingPositionsForVerification();
 
   if (pendingPositions.length === 0) {
     return { verified: 0, failed: 0, errors: [] };
@@ -428,7 +315,7 @@ export async function runVerificationLoop(): Promise<{
     const result = await verifyPosition(position, wallets);
 
     if (result.verified) {
-      await markPositionVerified(position.domain, position.id);
+      await providerMarkPositionVerified(position.domain, position.id);
       verified++;
       console.log(`[TradeVerifier] ✓ Verified ${position.domain} position ${position.id}`);
     } else {
@@ -494,48 +381,14 @@ export async function registerAgentWallet(
   walletType: 'solana' | 'hyperliquid' | 'polygon',
   walletAddress: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = getSupabase();
-
-  const columnMap = {
-    solana: 'solana_wallet_pubkey',
-    hyperliquid: 'hyperliquid_wallet',
-    polygon: 'polygon_wallet',
-  };
-
-  const { error } = await supabase
-    .from('agent_config')
-    .update({
-      [columnMap[walletType]]: walletAddress,
-      wallet_verified_at: new Date().toISOString(),
-    })
-    .eq('id', agentId);
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  return { success: true };
+  return providerRegisterAgentWallet(agentId, walletType, walletAddress);
 }
 
 /**
  * Mark agent as verified trader (all required wallets connected)
  */
 export async function markAgentAsVerifiedTrader(agentId: string): Promise<{ success: boolean; error?: string }> {
-  const supabase = getSupabase();
-
-  const { error } = await supabase
-    .from('agent_config')
-    .update({
-      verified_trader: true,
-      wallet_verified_at: new Date().toISOString(),
-    })
-    .eq('id', agentId);
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  return { success: true };
+  return providerMarkAgentVerified(agentId);
 }
 
 // =============================================================================

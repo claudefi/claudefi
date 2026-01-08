@@ -59,6 +59,7 @@ async function buildDomainContext(domain: Domain): Promise<DomainContext> {
       break;
   }
 
+  const now = new Date();
   return {
     domain,
     balance,
@@ -80,7 +81,12 @@ async function buildDomainContext(domain: Domain): Promise<DomainContext> {
     })),
     recentDecisions,
     performanceSnapshots: snapshots,
-    timestamp: new Date().toISOString(),
+    timestamp: now.toISOString(),
+    currentDate: now.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    }), // "January 8, 2026"
   };
 }
 

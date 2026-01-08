@@ -21,6 +21,11 @@ model AgentConfig {
   spotBalance       Float    @default(2500)
   paperTrading      Boolean  @default(true)
   activeDomains     String   @default("dlmm,perps,polymarket,spot")
+  solanaWalletPubkey String?
+  hyperliquidWallet  String?
+  polygonWallet      String?
+  walletVerifiedAt   DateTime?
+  verifiedTrader     Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
@@ -83,6 +88,28 @@ model PerformanceSnapshot {
   @@index([domain])
   @@index([timestamp])
   @@index([domain, timestamp])
+}
+
+model CommunitySkill {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  description String
+  author     String?
+  githubUrl  String?
+  domain     String?
+  downloads  Int      @default(0)
+  rating     Float    @default(0)
+  version    String   @default("1.0.0")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model UserSkill {
+  id          String   @id @default(uuid())
+  skillName   String
+  installedAt DateTime @default(now())
+
+  @@index([skillName])
 }
 
 // Skill reflection metadata for tracking learning effectiveness

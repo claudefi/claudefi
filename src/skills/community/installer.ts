@@ -9,8 +9,11 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { getSupabase } from '../../clients/supabase/client.js';
 import { getCommunitySkill, incrementDownloads, type CommunitySkill } from './registry.js';
+import {
+  trackSkillInstallation as providerTrackSkillInstallation,
+  untrackSkillInstallation as providerUntrackSkillInstallation,
+} from '../../data/provider.js';
 
 const INSTALLED_SKILLS_DIR = path.join(process.cwd(), '.claude', 'skills', 'community');
 
@@ -187,14 +190,7 @@ export async function getInstalledSkills(): Promise<string[]> {
  */
 async function trackInstallation(skillName: string): Promise<void> {
   try {
-    const supabase = getSupabase();
-
-    await supabase
-      .from('user_skills')
-      .insert({
-        skill_name: skillName,
-        // user_id would come from auth context in real implementation
-      });
+    await providerTrackSkillInstallation(skillName);
   } catch (error) {
     console.error('Failed to track installation:', error);
   }
@@ -205,12 +201,7 @@ async function trackInstallation(skillName: string): Promise<void> {
  */
 async function untrackInstallation(skillName: string): Promise<void> {
   try {
-    const supabase = getSupabase();
-
-    await supabase
-      .from('user_skills')
-      .delete()
-      .eq('skill_name', skillName);
+    await providerUntrackSkillInstallation(skillName);
   } catch (error) {
     console.error('Failed to untrack installation:', error);
   }

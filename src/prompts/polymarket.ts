@@ -183,6 +183,9 @@ export function buildPolymarketUserPrompt(context: DomainContext): string {
 
   return `# Prediction Markets - Trading Context
 
+## Current Date: ${context.currentDate}
+**For Firecrawl Research:** Always include this date in your search queries for current news and events.
+
 ## Portfolio Status
 - **Cash:** $${context.balance.toFixed(2)} | **Positions:** $${totalPositionValue.toFixed(2)} | **Total:** $${totalPortfolio.toFixed(2)}
 - **Open Positions:** ${positions.length}

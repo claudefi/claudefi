@@ -9,7 +9,14 @@
  * Following Anthropic's plugin marketplace pattern.
  */
 
-import { getSupabase } from '../../clients/supabase/client.js';
+import {
+  fetchCommunitySkills as providerFetchCommunitySkills,
+  searchCommunitySkillRegistry,
+  getCommunitySkillRecord,
+  incrementCommunitySkillDownloads as providerIncrementDownloads,
+  registerCommunitySkillRecord,
+} from '../../data/provider.js';
+import type { CommunitySkillRecord } from '../../types/internal.js';
 
 // Community skill metadata
 export interface CommunitySkill {
@@ -42,118 +49,31 @@ export async function fetchCommunitySkills(
     sortBy?: 'downloads' | 'rating' | 'updated_at';
   } = {}
 ): Promise<CommunitySkill[]> {
-  const supabase = getSupabase();
-  const { domain, limit = 50, sortBy = 'downloads' } = options;
-
-  let query = supabase
-    .from('community_skills')
-    .select('*')
-    .order(sortBy, { ascending: false })
-    .limit(limit);
-
-  if (domain) {
-    query = query.eq('domain', domain);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Failed to fetch community skills:', error);
-    return [];
-  }
-
-  return (data || []).map(row => ({
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    author: row.author,
-    githubUrl: row.github_url,
-    domain: row.domain,
-    downloads: row.downloads || 0,
-    rating: row.rating || 0,
-    version: row.version || '1.0.0',
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
-  }));
+  const records = await providerFetchCommunitySkills(options);
+  return records.map(mapCommunitySkillRecord);
 }
 
 /**
  * Search community skills by query
  */
 export async function searchCommunitySkills(query: string): Promise<CommunitySkill[]> {
-  const supabase = getSupabase();
-
-  const { data, error } = await supabase
-    .from('community_skills')
-    .select('*')
-    .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
-    .order('downloads', { ascending: false })
-    .limit(20);
-
-  if (error) {
-    console.error('Failed to search community skills:', error);
-    return [];
-  }
-
-  return (data || []).map(row => ({
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    author: row.author,
-    githubUrl: row.github_url,
-    domain: row.domain,
-    downloads: row.downloads || 0,
-    rating: row.rating || 0,
-    version: row.version || '1.0.0',
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
-  }));
+  const records = await searchCommunitySkillRegistry(query);
+  return records.map(mapCommunitySkillRecord);
 }
 
 /**
  * Get a single community skill by name
  */
 export async function getCommunitySkill(name: string): Promise<CommunitySkill | null> {
-  const supabase = getSupabase();
-
-  const { data, error } = await supabase
-    .from('community_skills')
-    .select('*')
-    .eq('name', name)
-    .single();
-
-  if (error || !data) {
-    return null;
-  }
-
-  return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    author: data.author,
-    githubUrl: data.github_url,
-    domain: data.domain,
-    downloads: data.downloads || 0,
-    rating: data.rating || 0,
-    version: data.version || '1.0.0',
-    createdAt: new Date(data.created_at),
-    updatedAt: new Date(data.updated_at),
-  };
+  const record = await getCommunitySkillRecord(name);
+  return record ? mapCommunitySkillRecord(record) : null;
 }
 
 /**
  * Increment download count for a skill
  */
 export async function incrementDownloads(skillName: string): Promise<void> {
-  const supabase = getSupabase();
-
-  const { error } = await supabase.rpc('increment_skill_downloads', {
-    skill_name: skillName,
-  });
-
-  if (error) {
-    console.error('Failed to increment downloads:', error);
-  }
+  await providerIncrementDownloads(skillName);
 }
 
 /**
@@ -166,37 +86,23 @@ export async function registerCommunitySkill(skill: {
   githubUrl: string;
   domain?: string;
 }): Promise<CommunitySkill | null> {
-  const supabase = getSupabase();
+  const record = await registerCommunitySkillRecord(skill);
+  return record ? mapCommunitySkillRecord(record) : null;
+}
 
-  const { data, error } = await supabase
-    .from('community_skills')
-    .insert({
-      name: skill.name,
-      description: skill.description,
-      author: skill.author,
-      github_url: skill.githubUrl,
-      domain: skill.domain,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Failed to register community skill:', error);
-    return null;
-  }
-
+function mapCommunitySkillRecord(record: CommunitySkillRecord): CommunitySkill {
   return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    author: data.author,
-    githubUrl: data.github_url,
-    domain: data.domain,
-    downloads: 0,
-    rating: 0,
-    version: '1.0.0',
-    createdAt: new Date(data.created_at),
-    updatedAt: new Date(data.updated_at),
+    id: record.id,
+    name: record.name,
+    description: record.description,
+    author: record.author,
+    githubUrl: record.githubUrl,
+    domain: record.domain,
+    downloads: record.downloads,
+    rating: record.rating,
+    version: record.version,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
   };
 }
 

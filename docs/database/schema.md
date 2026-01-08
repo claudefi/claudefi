@@ -1,6 +1,6 @@
 # Database Schema
 
-claudefi uses Prisma ORM with SQLite (local development) or PostgreSQL (production via Supabase).
+claudefi uses Prisma ORM with SQLite (local development) or Supabase/PostgreSQL when deployed. Select the backend with the `DATA_PROVIDER` env var (`prisma` by default, set to `supabase` for the hosted stack).
 
 ## Setup
 

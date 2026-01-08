@@ -12,7 +12,7 @@
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
+    "test": "vitest run",
     "test:resilience": "tsx src/test-resilience.ts",
     "test:cycle": "tsx src/test-cycle.ts",
     "cli": "tsx src/cli/index.ts",

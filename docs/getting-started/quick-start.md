@@ -20,7 +20,10 @@ Edit `.env` and add your Anthropic API key:
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+DATA_PROVIDER=prisma
 ```
+
+`DATA_PROVIDER=prisma` uses the local SQLite database. Switch to `supabase` only if you're deploying with the hosted backend.
 
 ## 3. Initialize Database
 

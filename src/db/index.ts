@@ -14,6 +14,25 @@ import type {
   DecisionHistory,
   Portfolio,
 } from '../types/index.js';
+import type { AgentWallets, PendingPosition, CommunitySkillRecord } from '../types/internal.js';
+
+function parseMetadata(raw: string | null | undefined): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch {
+    return {};
+  }
+}
+
+function extractVerificationReference(meta: Record<string, unknown>): string | undefined {
+  return (
+    (meta.tx_hash as string | undefined) ||
+    (meta.txHash as string | undefined) ||
+    (meta.order_id as string | undefined) ||
+    (meta.orderId as string | undefined)
+  );
+}
 
 // Re-export database lifecycle functions
 export { initDatabase, disconnectDatabase };
@@ -80,6 +99,66 @@ export async function getAllBalances(): Promise<Record<Domain, number>> {
     polymarket: config.polymarketBalance,
     spot: config.spotBalance,
   };
+}
+
+// =============================================================================
+// AGENT WALLETS
+// =============================================================================
+
+export async function getAgentWallets(agentId?: string): Promise<AgentWallets | null> {
+  const config = agentId
+    ? await prisma.agentConfig.findUnique({ where: { id: agentId } })
+    : await prisma.agentConfig.findFirst();
+
+  if (!config) {
+    return null;
+  }
+
+  return {
+    solana_wallet_pubkey: config.solanaWalletPubkey || undefined,
+    hyperliquid_wallet: config.hyperliquidWallet || undefined,
+    polygon_wallet: config.polygonWallet || undefined,
+  };
+}
+
+export async function registerAgentWallet(
+  agentId: string,
+  walletType: 'solana' | 'hyperliquid' | 'polygon',
+  walletAddress: string
+): Promise<{ success: boolean; error?: string }> {
+  const columnMap = {
+    solana: 'solanaWalletPubkey',
+    hyperliquid: 'hyperliquidWallet',
+    polygon: 'polygonWallet',
+  } as const;
+
+  try {
+    await prisma.agentConfig.updateMany({
+      where: { id: agentId },
+      data: {
+        [columnMap[walletType]]: walletAddress,
+        walletVerifiedAt: new Date(),
+      },
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export async function markAgentAsVerifiedTrader(agentId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await prisma.agentConfig.updateMany({
+      where: { id: agentId },
+      data: {
+        verifiedTrader: true,
+        walletVerifiedAt: new Date(),
+      },
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 // =============================================================================
@@ -204,6 +283,52 @@ export async function closePosition(
   await cache.del(CacheKeys.portfolioSummary);
 }
 
+export async function getPendingPositionsForVerification(): Promise<PendingPosition[]> {
+  const positions = await prisma.position.findMany({
+    where: {
+      status: 'open',
+    },
+    orderBy: { openedAt: 'asc' },
+  });
+
+  const pending: PendingPosition[] = [];
+
+  for (const position of positions) {
+    const meta = parseMetadata(position.metadata);
+    if ((meta.verified as boolean | undefined) === true) {
+      continue;
+    }
+
+    const txHash = extractVerificationReference(meta);
+    if (!txHash) continue;
+
+    pending.push({
+      domain: position.domain as Domain,
+      id: position.id,
+      tx_hash: txHash,
+      opened_at: position.openedAt.toISOString(),
+    });
+  }
+
+  return pending;
+}
+
+export async function markPositionVerified(domain: Domain, positionId: string): Promise<void> {
+  const position = await prisma.position.findUnique({ where: { id: positionId } });
+  if (!position) return;
+
+  const meta = parseMetadata(position.metadata);
+  meta.verified = true;
+  meta.verified_at = new Date().toISOString();
+
+  await prisma.position.update({
+    where: { id: positionId },
+    data: {
+      metadata: JSON.stringify(meta),
+    },
+  });
+}
+
 // =============================================================================
 // DECISION LOGGING
 // =============================================================================
@@ -220,6 +345,8 @@ export async function logDecision(
     reasoning: string;
     confidence: number;
     metadata?: Record<string, unknown>;
+    skillsApplied?: string[];
+    marketConditions?: Record<string, unknown>;
   }
 ): Promise<{ id: string } | null> {
   try {
@@ -231,7 +358,8 @@ export async function logDecision(
         amountUsd: decision.amountUsd,
         reasoning: decision.reasoning,
         confidence: decision.confidence,
-        marketConditions: JSON.stringify(decision.metadata || {}),
+        marketConditions: JSON.stringify(decision.marketConditions || decision.metadata || {}),
+        skillsApplied: JSON.stringify(decision.skillsApplied || []),
       },
     });
 
@@ -320,17 +448,19 @@ export async function getAllDecisions(options?: {
  * Take a performance snapshot
  */
 export async function takePerformanceSnapshot(
-  domain: Domain,
+  domain: Domain | null,
   totalValueUsd: number,
   numPositions: number,
-  dailyPnl?: number
+  pnlData?: { dailyPnl?: number; weeklyPnl?: number; totalPnl?: number }
 ): Promise<void> {
   await prisma.performanceSnapshot.create({
     data: {
       domain,
       totalValueUsd,
       numPositions,
-      dailyPnl,
+      dailyPnl: pnlData?.dailyPnl,
+      weeklyPnl: pnlData?.weeklyPnl,
+      totalPnl: pnlData?.totalPnl,
     },
   });
 }
@@ -354,7 +484,38 @@ export async function getPerformanceSnapshots(
     totalValueUsd: s.totalValueUsd,
     numPositions: s.numPositions,
     feesEarned: s.dailyPnl ?? undefined,
+    dailyPnl: s.dailyPnl ?? undefined,
+    weeklyPnl: s.weeklyPnl ?? undefined,
+    totalPnl: s.totalPnl ?? undefined,
   }));
+}
+
+/**
+ * Take snapshots for all domains + total portfolio
+ */
+export async function takeAllPerformanceSnapshots(): Promise<void> {
+  const balances = await getAllBalances();
+  const domains: Domain[] = ['dlmm', 'perps', 'polymarket', 'spot'];
+  const INITIAL_BALANCE = 2500;
+  const TOTAL_INITIAL = INITIAL_BALANCE * domains.length;
+
+  let totalAum = 0;
+  let totalPositions = 0;
+
+  for (const domain of domains) {
+    const positions = await getOpenPositions(domain);
+    const positionValue = positions.reduce((sum, p) => sum + p.currentValueUsd, 0);
+    const domainAum = balances[domain] + positionValue;
+    const domainPnl = domainAum - INITIAL_BALANCE;
+
+    totalAum += domainAum;
+    totalPositions += positions.length;
+
+    await takePerformanceSnapshot(domain, domainAum, positions.length, { totalPnl: domainPnl });
+  }
+
+  const totalPnl = totalAum - TOTAL_INITIAL;
+  await takePerformanceSnapshot(null, totalAum, totalPositions, { totalPnl });
 }
 
 // =============================================================================
@@ -411,6 +572,13 @@ export async function getPortfolio(): Promise<Portfolio> {
   await cache.set(CacheKeys.portfolioSummary, portfolio, CacheTTL.PORTFOLIO_SUMMARY);
 
   return portfolio;
+}
+
+/**
+ * Simple connection test for UI initialization
+ */
+export async function testConnection(): Promise<void> {
+  await prisma.$queryRaw`SELECT 1`;
 }
 
 // =============================================================================
@@ -621,6 +789,132 @@ export async function logTrade(data: {
   });
 
   return trade.id;
+}
+
+// =============================================================================
+// COMMUNITY SKILLS
+// =============================================================================
+
+function mapCommunitySkill(skill: {
+  id: string;
+  name: string;
+  description: string;
+  author: string | null;
+  githubUrl: string | null;
+  domain: string | null;
+  downloads: number;
+  rating: number;
+  version: string;
+  createdAt: Date;
+  updatedAt: Date;
+}): CommunitySkillRecord {
+  return {
+    id: skill.id,
+    name: skill.name,
+    description: skill.description,
+    author: skill.author ?? undefined,
+    githubUrl: skill.githubUrl ?? undefined,
+    domain: skill.domain ?? undefined,
+    downloads: skill.downloads,
+    rating: skill.rating,
+    version: skill.version,
+    createdAt: skill.createdAt,
+    updatedAt: skill.updatedAt,
+  };
+}
+
+export async function fetchCommunitySkills(options: {
+  domain?: string;
+  limit?: number;
+  sortBy?: 'downloads' | 'rating' | 'updated_at';
+} = {}): Promise<CommunitySkillRecord[]> {
+  const { domain, limit = 50, sortBy = 'downloads' } = options;
+  const prismaSort = sortBy === 'updated_at' ? 'updatedAt' : sortBy;
+
+  const skills = await prisma.communitySkill.findMany({
+    where: domain ? { domain } : undefined,
+    orderBy: { [prismaSort]: 'desc' },
+    take: limit,
+  });
+
+  return skills.map(mapCommunitySkill);
+}
+
+export async function searchCommunitySkills(query: string): Promise<CommunitySkillRecord[]> {
+  const skills = await prisma.communitySkill.findMany({
+    where: {
+      OR: [
+        { name: { contains: query } },
+        { description: { contains: query } },
+      ],
+    },
+    orderBy: { downloads: 'desc' },
+    take: 20,
+  });
+
+  return skills.map(mapCommunitySkill);
+}
+
+export async function getCommunitySkillRecord(name: string): Promise<CommunitySkillRecord | null> {
+  const skill = await prisma.communitySkill.findUnique({
+    where: { name },
+  });
+
+  return skill ? mapCommunitySkill(skill) : null;
+}
+
+export async function incrementCommunitySkillDownloads(skillName: string): Promise<void> {
+  await prisma.communitySkill.updateMany({
+    where: { name: skillName },
+    data: { downloads: { increment: 1 } },
+  });
+}
+
+export async function registerCommunitySkillRecord(skill: {
+  name: string;
+  description: string;
+  author: string;
+  githubUrl: string;
+  domain?: string;
+}): Promise<CommunitySkillRecord | null> {
+  try {
+    const record = await prisma.communitySkill.create({
+      data: {
+        name: skill.name,
+        description: skill.description,
+        author: skill.author,
+        githubUrl: skill.githubUrl,
+        domain: skill.domain,
+      },
+    });
+
+    return mapCommunitySkill(record);
+  } catch (error) {
+    console.error('Failed to register community skill:', error);
+    return null;
+  }
+}
+
+export async function trackSkillInstallation(skillName: string): Promise<void> {
+  await prisma.userSkill.create({
+    data: {
+      skillName,
+    },
+  });
+}
+
+export async function untrackSkillInstallation(skillName: string): Promise<void> {
+  await prisma.userSkill.deleteMany({
+    where: { skillName },
+  });
+}
+
+export async function listInstalledCommunitySkills(): Promise<string[]> {
+  const skills = await prisma.userSkill.findMany({
+    orderBy: { installedAt: 'desc' },
+  });
+
+  return skills.map((s: { skillName: string }) => s.skillName);
 }
 
 /**

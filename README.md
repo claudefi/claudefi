@@ -118,6 +118,8 @@ npm run db:studio          # Database browser
 ```bash
 # Required
 ANTHROPIC_API_KEY=sk-ant-...
+DATABASE_URL="file:./claudefi.db"
+DATA_PROVIDER=prisma              # prisma (local) or supabase
 
 # Optional
 PAPER_TRADING=true              # Default: true
@@ -125,6 +127,10 @@ ACTIVE_DOMAINS=dlmm,perps       # Default: all four
 CYCLE_INTERVAL_MS=1800000       # Default: 30 minutes
 CONFIDENCE_THRESHOLD=0.6        # Default: 0.6
 CLAUDE_MODEL=claude-opus-4-5-20251101  # See models below
+
+# Supabase (only if deploying with shared backend)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
 ```
 
 ### Agent SDK Compatible Models

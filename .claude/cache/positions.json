@@ -1,0 +1,90 @@
+{
+  "perps": {
+    "145fd97c-82dd-42ef-b0ad-283482e855c6": {
+      "position": {
+        "id": "145fd97c-82dd-42ef-b0ad-283482e855c6",
+        "domain": "perps",
+        "target": "SUI",
+        "targetName": "SUI",
+        "entryValueUsd": 350,
+        "currentValueUsd": 350,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-07T23:01:59.846+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "symbol": "SUI",
+          "leverage": 3
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T09:36:17.726Z"
+    },
+    "f4f4d5dd-3de0-4ef7-92bf-0a9a5e5f2af6": {
+      "position": {
+        "id": "f4f4d5dd-3de0-4ef7-92bf-0a9a5e5f2af6",
+        "domain": "perps",
+        "target": "ENA",
+        "targetName": "ENA",
+        "entryValueUsd": 300,
+        "currentValueUsd": 300,
+        "status": "open",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-07T23:10:58.506+00:00",
+        "closedAt": null,
+        "realizedPnl": 0,
+        "metadata": {
+          "symbol": "ENA",
+          "leverage": 3
+        }
+      },
+      "partialHistory": [],
+      "closed": false,
+      "updatedAt": "2026-01-08T09:36:17.726Z"
+    }
+  },
+  "dlmm": {},
+  "spot": {
+    "2e65bf74-b1da-4d92-91fc-85284b09744e": {
+      "position": {
+        "id": "2e65bf74-b1da-4d92-91fc-85284b09744e",
+        "domain": "spot",
+        "target": "26M5M3nwgaKE4zavkD3zEtYs5hJWdxe6xBwpdtsLHy1o",
+        "targetName": "26M5M3nwgaKE4zavkD3zEtYs5hJWdxe6xBwpdtsLHy1o",
+        "entryValueUsd": 350,
+        "currentValueUsd": 0,
+        "status": "closed",
+        "side": null,
+        "size": 0,
+        "entryPrice": 0,
+        "currentPrice": 0,
+        "openedAt": "2026-01-07T23:10:59.288+00:00",
+        "closedAt": "2026-01-08T09:36:56.734Z",
+        "realizedPnl": 0,
+        "metadata": {
+          "mint": "26M5M3nwgaKE4zavkD3zEtYs5hJWdxe6xBwpdtsLHy1o",
+          "symbol": "DINO"
+        }
+      },
+      "partialHistory": [
+        {
+          "timestamp": "2026-01-08T09:36:56.573Z",
+          "proportion": 1,
+          "realizedValueUsd": 350,
+          "realizedPnlUsd": 0
+        }
+      ],
+      "closed": true,
+      "updatedAt": "2026-01-08T09:36:56.734Z"
+    }
+  },
+  "polymarket": {}
+}

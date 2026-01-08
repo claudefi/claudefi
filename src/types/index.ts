@@ -107,6 +107,7 @@ export interface Position {
   status: 'open' | 'closed';
   openedAt: string;
   closedAt?: string;
+  realizedPnl?: number;
   metadata: Record<string, unknown>;
 }
 
@@ -204,6 +205,7 @@ export interface DLMMDecision extends AgentDecision {
     poolAddress?: string;
     strategy?: 'spot' | 'curve' | 'bid-ask';
     positionId?: string;
+    [key: string]: unknown;
   };
 }
 
@@ -217,6 +219,7 @@ export interface PerpsDecision extends AgentDecision {
     symbol?: string;
     leverage?: number;
     positionId?: string;
+    [key: string]: unknown;
   };
 }
 
@@ -230,6 +233,7 @@ export interface PolymarketDecision extends AgentDecision {
     conditionId?: string;
     positionId?: string;
     estimatedProbability?: number;
+    [key: string]: unknown;
   };
 }
 
@@ -243,6 +247,7 @@ export interface SpotDecision extends AgentDecision {
     symbol?: string;
     mint?: string;
     positionId?: string;
+    [key: string]: unknown;
   };
 }
 
@@ -261,6 +266,7 @@ export interface DomainContext {
   recentDecisions: DecisionHistory[];
   performanceSnapshots: PerformanceSnapshot[];
   timestamp: string;
+  currentDate: string; // Human-readable date for research (e.g., "January 8, 2026")
 }
 
 /**

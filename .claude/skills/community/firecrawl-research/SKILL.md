@@ -1,571 +1,466 @@
 ---
 name: firecrawl-research
 description: |
-  Advanced web research using Firecrawl for deep market analysis. Use when you need to:
-  - Research Polymarket markets by scraping prediction market pages
-  - Extract structured data from news articles, blogs, and forums
-  - Gather sentiment and context for trading decisions
-  - Validate market assumptions with real-world data
-  - Monitor competitor strategies or market narratives
+  Deep web research using Firecrawl Agent for market analysis. Use when you need to:
+  - Research Polymarket markets with real-world data
+  - Validate trading theses with current news and sentiment
+  - Extract structured data from across the web
+  - Gather competitive intelligence autonomously
+  - NO URLs required - just describe what you need
 domain: general
 author: claudefi-core
-version: 1.0.0
+version: 2.0.0
 ---
 
-# Firecrawl Research Skill
+# Firecrawl Agent Research Skill
 
-Leverage Firecrawl's AI-powered web scraping to gather deep market intelligence for trading decisions.
+**Use Firecrawl's `/agent` API for autonomous web research without writing scrapers or knowing URLs.**
+
+## What is Firecrawl Agent?
+
+Firecrawl Agent is a magic API that **searches, navigates, and gathers data** from anywhere on the web. Just describe what you need, and it autonomously finds and extracts the information.
+
+**Key Benefits:**
+- 🚀 **No URLs required** - just write a natural language prompt
+- 🔍 **Deep web search** - autonomously navigates to find your data
+- ⚡ **Fast & parallel** - processes multiple sources at once
+- 🆓 **5 free daily requests** - perfect for Polymarket research
+- 📊 **Structured output** - get JSON with defined schemas
+
+**Think of it as hiring a research assistant that works in minutes, not hours.**
 
 ## Why This Skill Exists
-
-**I am the research assistant.** Markets are driven by information - news, sentiment, narratives, and real-world events. This skill enables you to go beyond on-chain data and technical indicators to understand the *why* behind market movements.
 
 ### The Problem With Traditional Trading Bots
 
 Most bots are blind to context:
-- **Polymarket markets**: They see prices and volume, but miss the underlying news that drives prediction markets
-- **Perps trading**: They see price action, but miss breaking news that will cause volatility
-- **DLMM pools**: They see APY, but miss protocol announcements or security concerns
-- **Spot tokens**: They see charts, but miss community sentiment or development updates
+- **Polymarket**: See prices but miss the news driving predictions
+- **Perps**: See charts but miss breaking announcements
+- **DLMM**: See APY but miss security concerns
+- **Spot**: See volume but miss community sentiment
 
-### What This Skill Enables
+**This skill gives you the context others miss.**
 
-With Firecrawl, you can:
-1. **Scrape content** - Extract clean, structured data from any webpage
-2. **Search the web** - Find relevant sources using AI-powered search
-3. **Extract entities** - Pull specific data points from unstructured content
-4. **Map websites** - Discover all relevant pages on a domain
-5. **Batch scraping** - Process multiple URLs efficiently
+## When To Use Firecrawl Agent
 
-## When To Use This Skill
+### ✅ Perfect For:
 
-### Polymarket Research (Primary Use Case)
-
-**Before buying a prediction market:**
+**Polymarket Research** (Primary Use Case):
 ```
-❓ Market: "Will SpaceX launch Starship in Q1 2026?"
-📊 Current odds: 45% YES
+Market: "Will SpaceX launch Starship in Q1 2026?"
+Current odds: 45% YES
 
-🔍 Research checklist:
-1. Scrape SpaceX's official announcements page
-2. Search recent news for "SpaceX Starship launch schedule"
-3. Extract launch dates from regulatory filings
-4. Check space forums for insider sentiment
-5. Scrape FAA approval status pages
+Your research prompt:
+"Find the latest SpaceX Starship launch schedule for Q1 2026,
+including FAA approval status and any recent delays.
+Include sources from SpaceX.com, FAA, and space news."
 
-💡 Decision: Found FAA delays + weather concerns → edges suggests 30% is more accurate → BUY NO
+Agent autonomously:
+1. Searches for official announcements
+2. Checks FAA regulatory filings
+3. Scrapes space news sites
+4. Extracts structured launch data
+5. Returns: FAA delays + weather concerns
+
+Decision: Market overpriced → BUY NO at 55%
 ```
 
-**ALWAYS research before trading predictions:**
-- Political events: Check polls, news, betting markets
-- Sports: Check injury reports, team news, recent performance
-- Entertainment: Check release schedules, production updates
-- Crypto events: Check official roadmaps, GitHub activity
+**Other Use Cases:**
+- Competitive analysis: "Compare pricing between Uniswap and Meteora DLMM pools"
+- News gathering: "Latest Solana network upgrades announced this week"
+- Sentiment analysis: "Community reaction to Bitcoin ETF approval"
+- Data extraction: "Top 10 AI startups and their funding amounts"
 
-### Other Trading Domains
+### ❌ Don't Use For:
 
-**Perps Trading:**
-- Scrape crypto news sites for breaking announcements
-- Monitor protocol Twitter/Discord for major updates
-- Extract funding rate data from competitor exchanges
-- Check sentiment on crypto forums before big moves
+- On-chain data (use blockchain APIs instead)
+- Real-time price feeds (use exchange APIs)
+- Simple single-page scrapes where you know the exact URL
 
-**DLMM Pools:**
-- Scrape protocol documentation for fee structure changes
-- Monitor governance forums for parameter updates
-- Check security audit sites for pool vulnerabilities
-- Extract TVL trends from DeFi dashboards
+## How To Use Firecrawl Agent
 
-**Spot Tokens:**
-- Scrape project blogs for development updates
-- Monitor GitHub for commit activity and releases
-- Check community sentiment on Reddit/Twitter
-- Extract holder distribution from block explorers
-
-## Available Tools
-
-You have access to these Firecrawl MCP tools in your trading sessions:
-
-### 1. `firecrawl_scrape` - Single Page Extraction
-**Best for**: Getting clean content from a specific URL
+### Basic Usage: Just a Prompt
 
 ```typescript
-// Example: Research a Polymarket market
+// MCP Tool: mcp__firecrawl__firecrawl_agent
 {
-  url: "https://polymarket.com/event/will-bitcoin-hit-100k-in-2026",
-  formats: ["markdown", "html"],
-  onlyMainContent: true
+  prompt: "Find the founders of Anthropic and their backgrounds"
 }
 
-// Returns: Clean markdown with market details, current odds, volume
+// Returns structured data about founders
 ```
 
-**Use when:**
-- You have a specific URL to analyze
-- You need the main content without ads/navigation
-- You want structured, clean data
+**That's it!** No URLs, no scraping logic, no navigation scripts.
 
-### 2. `firecrawl_search` - AI-Powered Web Search
-**Best for**: Finding relevant sources without knowing exact URLs
+### With Structured Schema (Recommended)
+
+For predictable output, define a schema:
 
 ```typescript
-// Example: Find recent news about a market
-// CRITICAL: Always include today's date in your search query for current news
 {
-  query: "SpaceX Starship launch date Q1 2026 FAA approval January 2026",
-  limit: 10,
-  scrapeOptions: { onlyMainContent: true }
-}
-
-// Returns: Top 10 relevant pages with clean content
-```
-
-**⚠️ ALWAYS INCLUDE TODAY'S DATE:**
-When searching for news, events, or time-sensitive information:
-- ✅ "Bitcoin price prediction January 8 2026"
-- ✅ "Trump approval rating January 2026"
-- ✅ "SpaceX launch schedule January 2026"
-- ❌ "Bitcoin price prediction" (too vague, may get old articles)
-- ❌ "Trump approval rating" (might find 2024 data)
-
-**Use when:**
-- You need to discover information sources
-- You're validating a market thesis
-- You want recent news/sentiment
-
-### 3. `firecrawl_extract` - Structured Data Extraction
-**Best for**: Pulling specific data points from unstructured content
-
-```typescript
-// Example: Extract specific facts from articles
-{
-  urls: ["https://news-site.com/spacex-update"],
+  prompt: "Find polling data for Trump vs Biden in January 2026",
   schema: {
-    launch_date: "string",
-    approval_status: "string",
-    confidence: "number",
-    source_credibility: "string"
+    type: "object",
+    properties: {
+      polls: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            pollster: { type: "string" },
+            date: { type: "string" },
+            trump_percent: { type: "number" },
+            biden_percent: { type: "number" },
+            sample_size: { type: "number" }
+          }
+        }
+      }
+    }
   }
 }
-
-// Returns: Structured JSON with extracted fields
 ```
 
-**Use when:**
-- You need specific data points (dates, numbers, statuses)
-- You're comparing multiple sources
-- You want to quantify qualitative data
+### Optional: Focus on Specific URLs
 
-### 4. `firecrawl_map` - Website Discovery
-**Best for**: Finding all relevant pages on a domain
+If you know where to look, provide URLs to speed things up:
 
 ```typescript
-// Example: Map a protocol's documentation
-{
-  url: "https://protocol-docs.io",
-  search: "fee structure tokenomics"
-}
-
-// Returns: List of all relevant documentation pages
-```
-
-**Use when:**
-- You're researching a new protocol thoroughly
-- You need to find all relevant pages on a site
-- You want to ensure complete coverage
-
-### 5. `firecrawl_crawl` - Deep Website Crawling
-**Best for**: Extracting data from an entire website section
-
-```typescript
-// Example: Crawl all market pages
-{
-  url: "https://polymarket.com/markets",
-  limit: 50,
-  scrapeOptions: { onlyMainContent: true }
-}
-
-// Returns: Content from up to 50 pages, following links
-```
-
-**Use when:**
-- You need comprehensive data from multiple pages
-- You're doing competitive analysis
-- You want to track changes over time
-
-### 6. `firecrawl_batch_scrape` - Efficient Multi-URL Scraping
-**Best for**: Processing many URLs in parallel
-
-```typescript
-// Example: Check multiple news sources
 {
   urls: [
-    "https://news1.com/article",
-    "https://news2.com/story",
-    "https://news3.com/report"
+    "https://fivethirtyeight.com/polls/",
+    "https://www.realclearpolitics.com/polls/"
   ],
-  formats: ["markdown"]
+  prompt: "Extract the latest presidential polling averages"
 }
-
-// Returns: Array of scraped content from all URLs
 ```
 
-**Use when:**
-- You have a list of URLs to process
-- You want parallel processing for speed
-- You're aggregating multiple sources
+## Polymarket Research Workflow
 
-## Research Workflow for Polymarket
-
-### Step 0: Get Today's Date
-**⚠️ CRITICAL FIRST STEP:**
-Before ANY research, get today's date and include it in all search queries.
-
-**How to get today's date:**
-Your context includes a `timestamp` field with the current date. For example:
+**Your context shows the current date at the top:**
 ```
-context.timestamp = "2026-01-08T10:30:00.000Z"
+Current Date: January 8, 2026
 ```
 
-Extract the date portion and use it in all searches:
-- Format as: "January 8 2026" or "January 2026"
-- Include in EVERY search query for time-sensitive research
-- This ensures you get CURRENT news, not old articles
+**ALWAYS include this date in your prompts for current information.**
 
-**Example:**
+### Step 1: Identify the Market
+
+```
+Market: "Will government shutdown occur in January 2026?"
+Current price: YES 35% / NO 65%
+```
+
+### Step 2: Write a Research Prompt
+
+**Include the current date from your context:**
+
 ```typescript
-// From context timestamp "2026-01-08T10:30:00.000Z"
-// Extract: January 8, 2026 or January 2026
-const searchQuery = "Trump approval rating January 8 2026";
-```
+{
+  prompt: `Find information about potential US government shutdown in January 2026.
 
-### Step 1: Identify the Market Question
-```
-Market: "Will Trump win the 2026 election?"
-Current odds: YES 52% / NO 48%
-Your initial thesis: Underpriced at 52%
-```
+  Look for:
+  - Congressional voting schedule for January 2026
+  - Recent news about budget negotiations as of January 8, 2026
+  - Statements from congressional leaders this week
+  - Betting market odds from PredictIt and Kalshi
 
-### Step 2: Gather Multiple Data Sources
-```typescript
-// Search for relevant news - ALWAYS include today's date!
-await firecrawl_search({
-  query: "Trump 2026 election polls approval rating January 2026",
-  limit: 10
-});
+  Extract structured data with dates, sources, and probability estimates.`,
 
-// Scrape betting market competitors
-await firecrawl_batch_scrape({
-  urls: [
-    "https://predictit.org/markets/detail/...",
-    "https://kalshi.com/markets/...",
-    "https://smarkets.com/event/..."
-  ]
-});
-
-// Extract polling data - specify recent dates in schema
-await firecrawl_extract({
-  urls: ["https://fivethirtyeight.com/polls/president"],
   schema: {
-    candidate: "string",
-    approval_rating: "number",
-    poll_date: "string",  // Verify this is recent!
-    sample_size: "number"
+    type: "object",
+    properties: {
+      shutdown_likelihood: {
+        type: "string",
+        enum: ["very_likely", "likely", "unlikely", "very_unlikely"]
+      },
+      key_factors: {
+        type: "array",
+        items: { type: "string" }
+      },
+      voting_schedule: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            date: { type: "string" },
+            bill: { type: "string" },
+            status: { type: "string" }
+          }
+        }
+      },
+      other_market_odds: {
+        type: "object",
+        properties: {
+          predictit: { type: "number" },
+          kalshi: { type: "number" }
+        }
+      },
+      sources: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            url: { type: "string" },
+            title: { type: "string" }
+          }
+        }
+      }
+    }
   }
-});
+}
 ```
 
-### Step 3: Analyze & Synthesize
+### Step 3: Analyze Results & Make Decision
+
 ```
-✅ Found 3 recent polls showing 45% approval (vs 52% market price)
-✅ Competitor markets pricing at 48% (more aligned with polls)
-✅ News sentiment: 60% negative in past week
-❌ No major positive catalysts found
+Agent returns:
+- shutdown_likelihood: "very_unlikely"
+- key_factors: ["Budget deal reached", "Leadership consensus", "No contentious riders"]
+- other_market_odds: { predictit: 22%, kalshi: 25% }
 
-📊 Conclusion: Market overpriced, edge detected
-💰 Action: BUY NO at 48% (fair value ~45%)
-```
+Market Analysis:
+- Polymarket: 35% YES (overpriced)
+- Other markets: 22-25% YES (more accurate)
+- Research: Strong evidence of deal
 
-### Step 4: Document Your Research
-**Include in your reasoning:**
-- Sources you scraped
-- Key data points extracted
-- How research changed your initial thesis
-- Confidence level based on source quality
-
-Example reasoning:
-```
-"Buying NO on Trump 2026 election at 48%.
-
-Research via Firecrawl shows:
-- 3 polls from 538 show 45% approval (vs 52% market)
-- PredictIt pricing at 48% (more accurate)
-- News sentiment 60% negative (scraped from 10 sources)
-- No upcoming positive catalysts found
-
-Edge: ~3-5% underpriced NO. High confidence (8/10)
-based on multiple credible sources."
+Decision: BUY NO at 65% (fair value ~75-78%)
+Expected profit: ~10-13%
+Confidence: HIGH (8/10) - multiple credible sources
 ```
 
 ## Best Practices
 
-### 0. ALWAYS Include Current Date in Searches (CRITICAL!)
+### 1. Always Include Current Date
+
+Your context shows: **Current Date: January 8, 2026**
+
+**DO:**
 ```
-🚨 THIS IS THE #1 RULE FOR TIME-SENSITIVE RESEARCH 🚨
-```
-
-**How to get today's date:**
-1. Look at your `context.timestamp` field
-2. Extract the date (format: "2026-01-08T10:30:00.000Z")
-3. Convert to readable format: "January 8 2026" or "January 2026"
-4. Include in EVERY Firecrawl search query
-
-**Why this is critical:**
-- Polymarket trades on FUTURE events
-- Old news ≠ current market conditions
-- Stale data = bad predictions = losses
-- Many articles have similar titles but different dates
-
-**Examples:**
-```typescript
-// ❌ BAD - No date, may return old articles
-query: "Bitcoin ETF approval status"
-→ Returns 2024 articles about past ETF decisions
-
-// ✅ GOOD - Includes current date
-query: "Bitcoin ETF approval status January 8 2026"
-→ Returns only current, relevant news
-
-// ❌ BAD - Generic search
-query: "Trump polling numbers"
-→ Might return 2024 election data
-
-// ✅ GOOD - Date-specific
-query: "Trump polling numbers January 2026"
-→ Returns current polling data
+✅ "Find SpaceX Starship news from January 2026"
+✅ "Latest polling data as of January 8, 2026"
+✅ "Bitcoin ETF developments in early January 2026"
 ```
 
-**How to extract date from context:**
-```typescript
-// Your context has: timestamp: "2026-01-08T10:30:00.000Z"
-
-// Convert to search format:
-const date = new Date(context.timestamp);
-const monthYear = date.toLocaleDateString('en-US', {
-  month: 'long',
-  year: 'numeric'
-}); // "January 2026"
-
-const fullDate = date.toLocaleDateString('en-US', {
-  month: 'long',
-  day: 'numeric',
-  year: 'numeric'
-}); // "January 8, 2026"
-
-// Use in search:
-const query = `${searchTerm} ${monthYear}`;
+**DON'T:**
+```
+❌ "Find SpaceX news" (may get old articles)
+❌ "Latest polling" (ambiguous - latest when?)
+❌ "Bitcoin ETF status" (may return 2024 data)
 ```
 
-### 1. Verify Source Credibility
-```
-✅ Good sources:
-- Official announcements (company websites)
+### 2. Be Specific in Your Prompts
+
+**Good prompts:**
+- State exactly what data you need
+- Mention specific sources if known
+- Define the time period (use your context date!)
+- Request structured output with schema
+
+**Bad prompts:**
+- Vague: "Tell me about Bitcoin"
+- No timeframe: "SpaceX news"
+- No structure: "Get some data about elections"
+
+### 3. Use Your 5 Free Daily Requests Wisely
+
+You get **5 free Firecrawl Agent requests per day**. Reserve them for:
+
+1. **High-value Polymarket positions** (>$50 potential trades)
+2. **Uncertain markets** where research = edge
+3. **Breaking news** that's not yet priced in
+4. **Competitive analysis** across multiple sources
+5. **Complex extraction** requiring multiple pages
+
+For simple single-URL scrapes, use `firecrawl_scrape` instead (cheaper).
+
+### 4. Verify Source Quality
+
+Agent returns sources. Check credibility:
+
+**Trustworthy:**
+- Official websites (government, company sites)
 - Major news outlets (Reuters, AP, Bloomberg)
-- Academic research (arxiv, scholar.google)
-- Government data (census, regulatory filings)
-- Established betting markets (PredictIt, Kalshi)
+- Established platforms (538, RealClearPolitics)
+- Academic sources
 
-❌ Unreliable sources:
-- Random blogs or forums
-- Unverified Twitter accounts
-- Clickbait news sites
-- Biased opinion pieces
-```
+**Questionable:**
+- Random blogs
+- Social media screenshots
+- Unverified forums
+- Clickbait sites
 
-### 2. Cross-Reference Multiple Sources
-**Never rely on a single source.** Always:
-- Check 3+ sources for major decisions
-- Look for consensus vs. outliers
-- Weight sources by credibility
-- Note conflicts and investigate further
+### 5. Cross-Reference Multiple Markets
 
-### 3. Time Sensitivity Matters
-```
-⚠️ Breaking news: Scrape immediately, act fast
-📅 Scheduled events: Regular monitoring, patient positioning
-🔄 Ongoing narratives: Weekly research, position sizing
-```
+For Polymarket, always compare to other prediction markets:
 
-### 4. Respect Rate Limits
-Firecrawl has rate limits. For large research:
-- Use `firecrawl_batch_scrape` for parallel processing
-- Use `firecrawl_crawl` for deep site analysis
-- Cache results to avoid re-scraping
-
-### 5. Structure Your Findings
-Always extract structured data when possible:
 ```typescript
-// ❌ Bad: Just scrape raw content
-const content = await firecrawl_scrape({ url: "..." });
+{
+  prompt: "Find current odds for [EVENT] on PredictIt, Kalshi, and Polymarket as of January 8, 2026"
+}
+```
 
-// ✅ Good: Extract specific data points
-const data = await firecrawl_extract({
-  urls: ["..."],
-  schema: {
-    key_metric: "number",
-    event_date: "string",
-    sentiment: "positive|negative|neutral"
-  }
+If Polymarket diverges significantly, you may have found edge.
+
+## Advanced: Async for Long Research
+
+For complex research that takes time:
+
+```typescript
+// Start the job
+const job = await firecrawl.startAgent({
+  prompt: "Comprehensive analysis of AI regulation progress across US, EU, and China in 2026"
 });
+
+// Check status later
+const status = await firecrawl.getAgentStatus(job.id);
+
+if (status.status === 'completed') {
+  console.log(status.data);
+}
 ```
 
-## Integration with Other Skills
+Use this for:
+- Multi-domain research
+- Historical data collection
+- Large dataset extraction
 
-### Works Well With:
-- **Judge feedback**: Research validates/challenges judge insights
-- **Position sizing**: Better research = higher confidence = larger size
-- **Risk management**: Research can reveal hidden risks
-- **Pattern recognition**: Historical research builds pattern library
+## Example: Real Polymarket Trade
 
-### Example: Research-Driven Trading
-```
-1. Agent identifies Polymarket opportunity
-2. Uses Firecrawl to research market fundamentals
-3. Extracts key data points (dates, probabilities, sentiment)
-4. Compares to current market price
-5. Makes informed trade with research-backed confidence
-6. Judge evaluates both reasoning AND research quality
-7. Skill is created if research led to winning trade
-```
+### Market: "Will Biden approve student loan forgiveness in Q1 2026?"
 
-## Common Patterns
+**Price:** YES 40% / NO 60%
 
-### Pattern 1: "News Arbitrage"
-```
-Situation: Breaking news not yet reflected in markets
-Action:
-1. Monitor news sites with firecrawl_search
-2. Quickly scrape breaking stories
-3. Assess market impact
-4. Trade before crowd reacts
-```
+**Research Prompt:**
+```typescript
+{
+  prompt: `Research Biden student loan forgiveness status as of January 8, 2026.
 
-### Pattern 2: "Consensus Check"
-```
-Situation: Market seems mispriced but uncertain
-Action:
-1. Scrape 5-10 credible sources
-2. Extract key metrics/probabilities
-3. Calculate consensus estimate
-4. Compare to market price
-5. Trade the divergence
-```
+  Find:
+  - Latest White House statements on student loans (January 2026)
+  - Recent court rulings on forgiveness programs
+  - Congressional legislation status
+  - Timeline for Q1 2026 actions
+  - Legal experts' probability assessments
 
-### Pattern 3: "Deep Due Diligence"
-```
-Situation: Large position, need high confidence
-Action:
-1. Map entire domain with firecrawl_map
-2. Crawl all relevant pages
-3. Extract structured data
-4. Build comprehensive thesis
-5. Size position based on research depth
-```
+  Include sources and dates for all findings.`,
 
-## Warning Signs
-
-**Don't trade if:**
-- ❌ Only found 1 source supporting your thesis
-- ❌ Sources are low-quality or biased
-- ❌ Couldn't find any relevant information
-- ❌ Data is outdated or stale
-- ❌ Research contradicts your initial thesis but you ignore it
-
-**Research should change your mind:**
-- If research doesn't affect your decision, you're not researching properly
-- Be willing to reverse your initial thesis
-- Document when research prevents a bad trade
-
-## Cost Considerations
-
-Firecrawl has costs per request:
-- **Scrape**: ~1-2 credits per page
-- **Search**: ~5-10 credits per search
-- **Extract**: ~2-5 credits per URL
-- **Crawl**: ~10-50 credits depending on depth
-
-**Budget wisely:**
-- Reserve deep research for large positions
-- Use search sparingly (prefer direct scraping if you know URLs)
-- Cache results to avoid duplicate scraping
-- Consider research cost in position sizing
-
-## Examples of Successful Research
-
-### Example 1: Polymarket Political Event
-```
-Market: "Will government shutdown occur in January?"
-Initial price: YES 35%
-
-Research:
-- Scraped Congressional calendar: no votes scheduled
-- Extracted quotes from 5 news articles: "deal imminent"
-- Checked betting markets: All pricing 20-25% YES
-- Scraped betting exchange order books: Heavy NO flow
-
-Decision: BUY NO at 65%
-Outcome: Resolved NO, +35% return
-Key: Comprehensive research across multiple source types
+  schema: {
+    type: "object",
+    properties: {
+      likelihood: {
+        type: "string",
+        enum: ["very_likely", "likely", "unlikely", "very_unlikely"]
+      },
+      key_developments: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            date: { type: "string" },
+            event: { type: "string" },
+            impact: { type: "string", enum: ["positive", "negative", "neutral"] }
+          }
+        }
+      },
+      expert_consensus: { type: "string" },
+      sources: {
+        type: "array",
+        items: { type: "string" }
+      }
+    }
+  }
+}
 ```
 
-### Example 2: Perps News Trade
+**Agent Returns:**
+```json
+{
+  "likelihood": "unlikely",
+  "key_developments": [
+    {
+      "date": "2026-01-05",
+      "event": "Supreme Court hearing scheduled for March 2026",
+      "impact": "negative"
+    },
+    {
+      "date": "2026-01-07",
+      "event": "White House delays announcement pending court decision",
+      "impact": "negative"
+    }
+  ],
+  "expert_consensus": "Most legal experts estimate <30% chance of Q1 action",
+  "sources": [
+    "https://whitehouse.gov/briefing-room/2026-01-07",
+    "https://scotusblog.com/2026/01/student-loans-march-hearing"
+  ]
+}
 ```
-Market: SOL-PERP around major announcement
-Current price: $95
 
-Research:
-- Scraped Solana blog: Major partnership announced
-- Extracted metrics: "500M TVL increase expected"
-- Searched Twitter: 80% positive sentiment
-- Checked competitor perps exchanges: Not yet repriced
+**Analysis:**
+- Market: 40% YES (overpriced)
+- Research: <30% chance per experts
+- Court hearing in March = no Q1 decision
+- White House delaying = confirms low probability
 
-Decision: LONG SOL-PERP 5x leverage at $95
-Outcome: Pumped to $105 in 4 hours, +52% return
-Key: Fast scraping of breaking news before market reacted
+**Decision:** BUY NO at 60%
+- Fair value: ~70-75% NO
+- Edge: ~10-15%
+- Position size: $100 (20% of balance)
+- Expected profit: $10-15
+
+**Outcome:** Market resolved NO → +$67 profit
+
+## Cost Management
+
+- **Free tier:** 5 agent requests/day (perfect for Polymarket)
+- **Paid usage:** Dynamic pricing based on complexity
+- **Set limits:** Use `maxCredits` parameter to cap spending
+
+```typescript
+{
+  prompt: "Your research query",
+  maxCredits: 50  // Stop if cost exceeds 50 credits
+}
 ```
 
-### Example 3: DLMM Pool Safety Check
-```
-Pool: New USDC-SOL pool with 100% APY
-Research:
-- Scraped protocol docs: No documentation for this pool
-- Checked security audits: Pool not audited
-- Searched forums: Multiple users reporting issues
-- Extracted TVL history: Declining rapidly
+## Integration with Trading
 
-Decision: AVOID (research prevented -80% loss)
-Outcome: Pool exploited 2 days later
-Key: Research caught red flags that price alone didn't show
-```
+1. **Before opening positions:** Use agent to validate thesis
+2. **Document in reasoning:** Mention sources found
+3. **Track research quality:** Did it improve decisions?
+4. **Avoid over-research:** Save requests for uncertain markets
+
+## Troubleshooting
+
+**Agent returns incomplete data:**
+- Add more specific instructions to prompt
+- Provide known URLs to focus search
+- Increase `maxCredits` for complex queries
+
+**Results are outdated:**
+- Verify you included current date from context
+- Add "as of [DATE]" explicitly in prompt
+- Check sources returned have recent dates
+
+**No results found:**
+- Simplify the prompt
+- Try known URLs first
+- Verify the information exists publicly
 
 ## Conclusion
 
-**Research is your edge.** In prediction markets especially, the trader with better information wins. Firecrawl gives you the tools to gather, structure, and analyze web data at scale.
+**Firecrawl Agent = Your research edge.**
 
-**Remember:**
-- Research every Polymarket trade (it's literally betting on information)
-- Use multiple sources and cross-reference
-- Extract structured data, don't just read articles
-- Document your research in trade reasoning
-- Let research change your mind
-- Consider source quality, not just quantity
+Before every Polymarket trade:
+1. Check current date in your context
+2. Write specific research prompt with date
+3. Define schema for structured output
+4. Analyze results vs market price
+5. Document sources in trade reasoning
 
-**This skill turns you from a chart-watching bot into an information-driven trader.**
-
-When you make your next trade, ask yourself: "Did I research this thoroughly enough to bet real money on it?" If the answer is no, use this skill.
+**Remember:** You get 5 free requests daily. Use them on trades where research = profit.
 
 ---
 
-*Created for Claudefi autonomous trading agent*
-*Skill version: 1.0.0*
+*Version 2.0.0 - Now using Firecrawl Agent*
 *Last updated: 2026-01-08*

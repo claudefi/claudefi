@@ -15,6 +15,7 @@ import { initCommand } from './commands/init.js';
 import { runCommand } from './commands/run.js';
 import { monitorCommand } from './commands/monitor.js';
 import { statusCommand } from './commands/status.js';
+import { registerSkillsCommand } from './commands/skills.js';
 
 const program = new Command();
 
@@ -47,5 +48,7 @@ program
   .description('show quick portfolio status')
   .option('-d, --domain <domain>', 'show status for specific domain')
   .action(statusCommand);
+
+registerSkillsCommand(program);
 
 program.parse();
