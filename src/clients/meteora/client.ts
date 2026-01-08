@@ -5,6 +5,8 @@
  * Documentation: https://docs.meteora.ag/
  */
 
+import { resilientFetch, ResilientFetchError } from '../../infra/resilient-fetch.js';
+
 export interface MeteoraPool {
   address: string;
   name: string;
@@ -44,19 +46,13 @@ export class MeteoraClient {
     try {
       const url = `${this.baseUrl}/pair/all_with_pagination?page=1&limit=${limit}&sort_by=liquidity&sort_order=desc`;
 
-      const response = await fetch(url, {
+      const data = await resilientFetch<{ pairs?: MeteoraPool[] } | MeteoraPool[]>(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; Claudefi/1.0)',
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`Meteora API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json() as { pairs?: MeteoraPool[] } | MeteoraPool[];
       const pools = Array.isArray(data) ? data : (data.pairs || []);
-
       return pools;
     } catch (error) {
       console.error('Failed to fetch Meteora pools:', error);
@@ -71,17 +67,12 @@ export class MeteoraClient {
     try {
       const url = `${this.baseUrl}/pair/${address}`;
 
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error(`Meteora API error: ${response.status}`);
-      }
-
-      return await response.json() as MeteoraPool;
+      return await resilientFetch<MeteoraPool>(url);
     } catch (error) {
+      // Handle 404 specifically
+      if (error instanceof ResilientFetchError && error.statusCode === 404) {
+        return null;
+      }
       console.error(`Failed to fetch pool ${address}:`, error);
       return null;
     }

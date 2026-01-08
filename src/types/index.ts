@@ -281,11 +281,14 @@ export interface DecisionHistory {
  * Performance snapshot
  */
 export interface PerformanceSnapshot {
-  domain: Domain;
+  domain: Domain | null; // null = total portfolio
   timestamp: string;
   totalValueUsd: number;
   numPositions: number;
   feesEarned?: number;
+  dailyPnl?: number;
+  weeklyPnl?: number;
+  totalPnl?: number;
 }
 
 // =============================================================================

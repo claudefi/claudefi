@@ -5,6 +5,8 @@
  * Docs: https://docs.polymarket.com/#gamma-markets-api
  */
 
+import { resilientFetch, ResilientFetchError } from '../../infra/resilient-fetch.js';
+
 export interface PolyMarket {
   id: string;
   condition_id: string;
@@ -48,13 +50,7 @@ export class GammaClient {
     const url = `${this.baseUrl}/markets?${queryParams.toString()}`;
 
     try {
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error(`Gamma API error: ${response.status} ${response.statusText}`);
-      }
-
-      return await response.json() as PolyMarket[];
+      return await resilientFetch<PolyMarket[]>(url);
     } catch (error) {
       console.error('Gamma API getMarkets failed:', error);
       throw error;
@@ -68,17 +64,12 @@ export class GammaClient {
     const url = `${this.baseUrl}/markets/${conditionId}`;
 
     try {
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error(`Gamma API error: ${response.status}`);
-      }
-
-      return await response.json() as PolyMarket;
+      return await resilientFetch<PolyMarket>(url);
     } catch (error) {
+      // Handle 404 specifically
+      if (error instanceof ResilientFetchError && error.statusCode === 404) {
+        return null;
+      }
       console.error(`Gamma API getMarket(${conditionId}) failed:`, error);
       return null;
     }

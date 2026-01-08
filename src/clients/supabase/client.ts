@@ -1,12 +1,15 @@
 /**
  * Supabase Client
- * Reuses ClaudeFi's Supabase schema
+ * Uses Prisma-aligned schema with unified tables
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Domain, Position, PerformanceSnapshot, DecisionHistory, Portfolio } from '../../types/index.js';
 
 let supabaseInstance: SupabaseClient | null = null;
+
+// ClaudeFi agent UUID
+const CLAUDEFI_AGENT_ID = '30fbb2c4-0b41-4259-9e50-3a5f7e68e309';
 
 /**
  * Get or create Supabase client instance
@@ -29,9 +32,6 @@ export function getSupabase(): SupabaseClient {
 // BALANCE OPERATIONS
 // =============================================================================
 
-// ClaudeFi model UUID - created with 10k starting balance
-const CLAUDEFI_MODEL_ID = '30fbb2c4-0b41-4259-9e50-3a5f7e68e309';
-
 /**
  * Get balance for a specific domain
  */
@@ -40,9 +40,9 @@ export async function getDomainBalance(domain: Domain): Promise<number> {
   const balanceColumn = `${domain}_balance`;
 
   const { data, error } = await supabase
-    .from('models')
+    .from('agent_config')
     .select(balanceColumn)
-    .eq('id', CLAUDEFI_MODEL_ID)
+    .eq('id', CLAUDEFI_AGENT_ID)
     .single();
 
   if (error) {
@@ -62,9 +62,9 @@ export async function updateDomainBalance(domain: Domain, newBalance: number): P
   const balanceColumn = `${domain}_balance`;
 
   const { error } = await supabase
-    .from('models')
+    .from('agent_config')
     .update({ [balanceColumn]: newBalance, updated_at: new Date().toISOString() })
-    .eq('id', CLAUDEFI_MODEL_ID);
+    .eq('id', CLAUDEFI_AGENT_ID);
 
   if (error) {
     throw new Error(`Failed to update ${domain} balance: ${error.message}`);
@@ -78,9 +78,9 @@ export async function getAllBalances(): Promise<Record<Domain, number>> {
   const supabase = getSupabase();
 
   const { data, error } = await supabase
-    .from('models')
+    .from('agent_config')
     .select('dlmm_balance, perps_balance, polymarket_balance, spot_balance')
-    .eq('id', CLAUDEFI_MODEL_ID)
+    .eq('id', CLAUDEFI_AGENT_ID)
     .single();
 
   if (error || !data) {
@@ -97,7 +97,7 @@ export async function getAllBalances(): Promise<Record<Domain, number>> {
 }
 
 // =============================================================================
-// POSITION OPERATIONS
+// POSITION OPERATIONS (Unified positions table)
 // =============================================================================
 
 /**
@@ -106,32 +106,11 @@ export async function getAllBalances(): Promise<Record<Domain, number>> {
 export async function getOpenPositions(domain: Domain): Promise<Position[]> {
   const supabase = getSupabase();
 
-  // Different tables per domain
-  const tableMap: Record<Domain, string> = {
-    dlmm: 'liquidity_positions',
-    perps: 'perps_positions',
-    polymarket: 'polymarket_positions',
-    spot: 'liquidity_positions',
-  };
-
-  const table = tableMap[domain];
-
-  // Only liquidity_positions has a domain column (shared by dlmm and spot)
-  // perps_positions and polymarket_positions are single-domain tables
-  const hasDomainColumn = table === 'liquidity_positions';
-
-  let query = supabase
-    .from(table)
+  const { data, error } = await supabase
+    .from('positions')
     .select('*')
-    .eq('model_id', CLAUDEFI_MODEL_ID)
+    .eq('domain', domain)
     .eq('status', 'open');
-
-  // Only filter by domain for liquidity_positions
-  if (hasDomainColumn) {
-    query = query.eq('domain', domain);
-  }
-
-  const { data, error } = await query;
 
   if (error) {
     console.error(`Error fetching ${domain} positions:`, error);
@@ -140,14 +119,55 @@ export async function getOpenPositions(domain: Domain): Promise<Position[]> {
 
   return (data || []).map(row => ({
     id: row.id,
-    domain,
-    target: row.pool_address || row.symbol || row.condition_id,
-    entryValueUsd: parseFloat(row.entry_value_usd || row.amount_usd || '0'),
-    currentValueUsd: parseFloat(row.current_value_usd || row.amount_usd || '0'),
+    domain: row.domain as Domain,
+    target: row.target,
+    targetName: row.target_name,
+    entryValueUsd: parseFloat(row.entry_value_usd || '0'),
+    currentValueUsd: parseFloat(row.current_value_usd || '0'),
     status: row.status,
-    openedAt: row.opened_at || row.created_at,
+    side: row.side,
+    size: parseFloat(row.size || '0'),
+    entryPrice: parseFloat(row.entry_price || '0'),
+    currentPrice: parseFloat(row.current_price || '0'),
+    openedAt: row.opened_at,
     closedAt: row.closed_at,
-    metadata: row,
+    realizedPnl: parseFloat(row.realized_pnl || '0'),
+    metadata: row.metadata || {},
+  }));
+}
+
+/**
+ * Get all open positions across all domains
+ */
+export async function getAllOpenPositions(): Promise<Position[]> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('positions')
+    .select('*')
+    .eq('status', 'open');
+
+  if (error) {
+    console.error('Error fetching all positions:', error);
+    return [];
+  }
+
+  return (data || []).map(row => ({
+    id: row.id,
+    domain: row.domain as Domain,
+    target: row.target,
+    targetName: row.target_name,
+    entryValueUsd: parseFloat(row.entry_value_usd || '0'),
+    currentValueUsd: parseFloat(row.current_value_usd || '0'),
+    status: row.status,
+    side: row.side,
+    size: parseFloat(row.size || '0'),
+    entryPrice: parseFloat(row.entry_price || '0'),
+    currentPrice: parseFloat(row.current_price || '0'),
+    openedAt: row.opened_at,
+    closedAt: row.closed_at,
+    realizedPnl: parseFloat(row.realized_pnl || '0'),
+    metadata: row.metadata || {},
   }));
 }
 
@@ -156,34 +176,35 @@ export async function getOpenPositions(domain: Domain): Promise<Position[]> {
  */
 export async function createPosition(
   domain: Domain,
-  positionData: Record<string, unknown>
+  positionData: {
+    target: string;
+    targetName?: string;
+    entryValueUsd: number;
+    side?: string;
+    size?: number;
+    entryPrice?: number;
+    metadata?: Record<string, unknown>;
+  }
 ): Promise<string> {
   const supabase = getSupabase();
 
-  const tableMap: Record<Domain, string> = {
-    dlmm: 'liquidity_positions',
-    perps: 'perps_positions',
-    polymarket: 'polymarket_positions',
-    spot: 'liquidity_positions',
-  };
-
-  const table = tableMap[domain];
-  const hasDomainColumn = table === 'liquidity_positions';
-
-  const insertData: Record<string, unknown> = {
-    model_id: CLAUDEFI_MODEL_ID,
+  const insertData = {
+    domain,
+    target: positionData.target,
+    target_name: positionData.targetName,
+    entry_value_usd: positionData.entryValueUsd,
+    current_value_usd: positionData.entryValueUsd,
     status: 'open',
+    side: positionData.side,
+    size: positionData.size,
+    entry_price: positionData.entryPrice,
+    current_price: positionData.entryPrice,
     opened_at: new Date().toISOString(),
-    ...positionData,
+    metadata: positionData.metadata || {},
   };
-
-  // Only add domain column for liquidity_positions
-  if (hasDomainColumn) {
-    insertData.domain = domain;
-  }
 
   const { data, error } = await supabase
-    .from(table)
+    .from('positions')
     .insert(insertData)
     .select('id')
     .single();
@@ -196,29 +217,61 @@ export async function createPosition(
 }
 
 /**
+ * Update position current values
+ */
+export async function updatePosition(
+  positionId: string,
+  updates: {
+    currentValueUsd?: number;
+    currentPrice?: number;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<void> {
+  const supabase = getSupabase();
+
+  const updateData: Record<string, unknown> = {};
+  if (updates.currentValueUsd !== undefined) updateData.current_value_usd = updates.currentValueUsd;
+  if (updates.currentPrice !== undefined) updateData.current_price = updates.currentPrice;
+  if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
+
+  const { error } = await supabase
+    .from('positions')
+    .update(updateData)
+    .eq('id', positionId);
+
+  if (error) {
+    throw new Error(`Failed to update position: ${error.message}`);
+  }
+}
+
+/**
  * Close a position
  */
 export async function closePosition(
   domain: Domain,
   positionId: string,
-  closingData: Record<string, unknown>
+  closingData: {
+    realizedPnl?: number;
+    currentValueUsd?: number;
+    currentPrice?: number;
+    metadata?: Record<string, unknown>;
+  }
 ): Promise<void> {
   const supabase = getSupabase();
 
-  const tableMap: Record<Domain, string> = {
-    dlmm: 'liquidity_positions',
-    perps: 'perps_positions',
-    polymarket: 'polymarket_positions',
-    spot: 'liquidity_positions',
+  const updateData: Record<string, unknown> = {
+    status: 'closed',
+    closed_at: new Date().toISOString(),
   };
 
+  if (closingData.realizedPnl !== undefined) updateData.realized_pnl = closingData.realizedPnl;
+  if (closingData.currentValueUsd !== undefined) updateData.current_value_usd = closingData.currentValueUsd;
+  if (closingData.currentPrice !== undefined) updateData.current_price = closingData.currentPrice;
+  if (closingData.metadata !== undefined) updateData.metadata = closingData.metadata;
+
   const { error } = await supabase
-    .from(tableMap[domain])
-    .update({
-      status: 'closed',
-      closed_at: new Date().toISOString(),
-      ...closingData,
-    })
+    .from('positions')
+    .update(updateData)
     .eq('id', positionId);
 
   if (error) {
@@ -227,7 +280,7 @@ export async function closePosition(
 }
 
 // =============================================================================
-// DECISION LOGGING
+// DECISION LOGGING (Unified decisions table)
 // =============================================================================
 
 /**
@@ -241,23 +294,27 @@ export async function logDecision(
     amountUsd?: number;
     reasoning: string;
     confidence: number;
-    metadata?: Record<string, unknown>;
+    skillsApplied?: string[];
+    marketConditions?: Record<string, unknown>;
   }
 ): Promise<{ id: string } | null> {
   const supabase = getSupabase();
 
+  const insertData = {
+    domain,
+    action: decision.action,
+    target: decision.target,
+    amount_usd: decision.amountUsd,
+    reasoning: decision.reasoning,
+    confidence: decision.confidence,
+    skills_applied: decision.skillsApplied || [],
+    market_conditions: decision.marketConditions || {},
+    decision_timestamp: new Date().toISOString(),
+  };
+
   const { data, error } = await supabase
-    .from('agent_decisions')
-    .insert({
-      model_id: CLAUDEFI_MODEL_ID,
-      domain,
-      action: decision.action,
-      pool_address: decision.target,
-      amount_usd: decision.amountUsd,
-      reasoning: decision.reasoning,
-      confidence: decision.confidence,
-      decision_timestamp: new Date().toISOString(),
-    })
+    .from('decisions')
+    .insert(insertData)
     .select('id')
     .single();
 
@@ -270,15 +327,41 @@ export async function logDecision(
 }
 
 /**
+ * Update decision outcome
+ */
+export async function updateDecisionOutcome(
+  decisionId: string,
+  outcome: {
+    outcome: 'profit' | 'loss' | 'pending';
+    realizedPnl?: number;
+    pnlPercent?: number;
+  }
+): Promise<void> {
+  const supabase = getSupabase();
+
+  const { error } = await supabase
+    .from('decisions')
+    .update({
+      outcome: outcome.outcome,
+      realized_pnl: outcome.realizedPnl,
+      pnl_percent: outcome.pnlPercent,
+    })
+    .eq('id', decisionId);
+
+  if (error) {
+    console.error('Failed to update decision outcome:', error);
+  }
+}
+
+/**
  * Get recent decisions for a domain
  */
 export async function getRecentDecisions(domain: Domain, limit = 5): Promise<DecisionHistory[]> {
   const supabase = getSupabase();
 
   const { data, error } = await supabase
-    .from('agent_decisions')
+    .from('decisions')
     .select('*')
-    .eq('model_id', CLAUDEFI_MODEL_ID)
     .eq('domain', domain)
     .order('decision_timestamp', { ascending: false })
     .limit(limit);
@@ -290,11 +373,11 @@ export async function getRecentDecisions(domain: Domain, limit = 5): Promise<Dec
 
   return (data || []).map(row => ({
     action: row.action,
-    target: row.pool_address,
+    target: row.target,
     amountUsd: parseFloat(row.amount_usd || '0'),
     reasoning: row.reasoning,
     confidence: parseFloat(row.confidence || '0'),
-    outcome: row.was_profitable === true ? 'profitable' : row.was_profitable === false ? 'loss' : 'pending',
+    outcome: row.outcome === 'profit' ? 'profitable' : row.outcome === 'loss' ? 'loss' : 'pending',
     realizedPnl: parseFloat(row.realized_pnl || '0'),
     timestamp: row.decision_timestamp,
   }));
@@ -305,25 +388,26 @@ export async function getRecentDecisions(domain: Domain, limit = 5): Promise<Dec
 // =============================================================================
 
 /**
- * Take a performance snapshot
+ * Take a performance snapshot for a domain
  */
 export async function takePerformanceSnapshot(
-  domain: Domain,
+  domain: Domain | null,
   totalValueUsd: number,
   numPositions: number,
-  feesEarned?: number
+  pnlData?: { dailyPnl?: number; weeklyPnl?: number; totalPnl?: number }
 ): Promise<void> {
   const supabase = getSupabase();
 
   const { error } = await supabase
     .from('performance_snapshots')
     .insert({
-      model_id: CLAUDEFI_MODEL_ID,
       domain,
       timestamp: new Date().toISOString(),
       total_value_usd: totalValueUsd,
       num_positions: numPositions,
-      total_fees_earned: feesEarned,
+      daily_pnl: pnlData?.dailyPnl,
+      weekly_pnl: pnlData?.weeklyPnl,
+      total_pnl: pnlData?.totalPnl,
     });
 
   if (error) {
@@ -332,18 +416,53 @@ export async function takePerformanceSnapshot(
 }
 
 /**
+ * Take snapshots for all domains + total portfolio
+ */
+export async function takeAllPerformanceSnapshots(): Promise<void> {
+  const balances = await getAllBalances();
+  const domains: Domain[] = ['dlmm', 'perps', 'polymarket', 'spot'];
+  const INITIAL_BALANCE = 2500;
+  const TOTAL_INITIAL = 10000;
+
+  let totalAum = 0;
+  let totalPositions = 0;
+
+  for (const domain of domains) {
+    const positions = await getOpenPositions(domain);
+    const positionValue = positions.reduce((sum, p) => sum + (p.currentValueUsd || 0), 0);
+    const domainAum = balances[domain] + positionValue;
+    const domainPnl = domainAum - INITIAL_BALANCE;
+
+    totalAum += domainAum;
+    totalPositions += positions.length;
+
+    await takePerformanceSnapshot(domain, domainAum, positions.length, { totalPnl: domainPnl });
+  }
+
+  // Total portfolio snapshot (domain = null)
+  const totalPnl = totalAum - TOTAL_INITIAL;
+  await takePerformanceSnapshot(null, totalAum, totalPositions, { totalPnl });
+}
+
+/**
  * Get recent performance snapshots
  */
-export async function getPerformanceSnapshots(domain: Domain, limit = 50): Promise<PerformanceSnapshot[]> {
+export async function getPerformanceSnapshots(domain: Domain | null, limit = 50): Promise<PerformanceSnapshot[]> {
   const supabase = getSupabase();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('performance_snapshots')
     .select('*')
-    .eq('model_id', CLAUDEFI_MODEL_ID)
-    .eq('domain', domain)
     .order('timestamp', { ascending: false })
     .limit(limit);
+
+  if (domain === null) {
+    query = query.is('domain', null);
+  } else {
+    query = query.eq('domain', domain);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching snapshots:', error);
@@ -351,12 +470,217 @@ export async function getPerformanceSnapshots(domain: Domain, limit = 50): Promi
   }
 
   return (data || []).map(row => ({
-    domain,
+    domain: row.domain as Domain | null,
     timestamp: row.timestamp,
     totalValueUsd: parseFloat(row.total_value_usd || '0'),
     numPositions: row.num_positions,
-    feesEarned: parseFloat(row.total_fees_earned || '0'),
+    dailyPnl: parseFloat(row.daily_pnl || '0'),
+    weeklyPnl: parseFloat(row.weekly_pnl || '0'),
+    totalPnl: parseFloat(row.total_pnl || '0'),
   }));
+}
+
+// =============================================================================
+// TRADE LOGGING
+// =============================================================================
+
+/**
+ * Log a trade execution
+ */
+export async function logTrade(
+  domain: Domain,
+  trade: {
+    positionId?: string;
+    decisionId?: string;
+    action: string;
+    target: string;
+    targetName?: string;
+    side?: string;
+    size: number;
+    priceUsd: number;
+    valueUsd: number;
+    fee?: number;
+    txHash?: string;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<{ id: string } | null> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('trades')
+    .insert({
+      domain,
+      position_id: trade.positionId,
+      decision_id: trade.decisionId,
+      action: trade.action,
+      target: trade.target,
+      target_name: trade.targetName,
+      side: trade.side,
+      size: trade.size,
+      price_usd: trade.priceUsd,
+      value_usd: trade.valueUsd,
+      fee: trade.fee,
+      tx_hash: trade.txHash,
+      executed_at: new Date().toISOString(),
+      metadata: trade.metadata || {},
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('Failed to log trade:', error);
+    return null;
+  }
+
+  return data;
+}
+
+// =============================================================================
+// DECISION EVALUATIONS (Judge feedback)
+// =============================================================================
+
+/**
+ * Log a judge evaluation
+ */
+export async function logDecisionEvaluation(
+  evaluation: {
+    decisionId: string;
+    domain: Domain;
+    action: string;
+    target?: string;
+    wasGoodDecision: boolean;
+    qualityScore?: number;
+    strengths?: string;
+    weaknesses?: string;
+    missedFactors?: string;
+    betterApproach?: string;
+    keyInsight: string;
+    insightType: string;
+    applicability?: string;
+  }
+): Promise<void> {
+  const supabase = getSupabase();
+
+  const { error } = await supabase
+    .from('decision_evaluations')
+    .insert({
+      decision_id: evaluation.decisionId,
+      domain: evaluation.domain,
+      action: evaluation.action,
+      target: evaluation.target,
+      was_good_decision: evaluation.wasGoodDecision,
+      quality_score: evaluation.qualityScore,
+      strengths: evaluation.strengths,
+      weaknesses: evaluation.weaknesses,
+      missed_factors: evaluation.missedFactors,
+      better_approach: evaluation.betterApproach,
+      key_insight: evaluation.keyInsight,
+      insight_type: evaluation.insightType,
+      applicability: evaluation.applicability || 'domain',
+      created_at: new Date().toISOString(),
+    });
+
+  if (error) {
+    console.error('Failed to log evaluation:', error);
+  }
+}
+
+/**
+ * Get recent evaluations for learning
+ */
+export async function getRecentEvaluations(domain: Domain, limit = 10): Promise<unknown[]> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('decision_evaluations')
+    .select('*')
+    .eq('domain', domain)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching evaluations:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// =============================================================================
+// SKILL REFLECTIONS
+// =============================================================================
+
+/**
+ * Log a skill reflection
+ */
+export async function logSkillReflection(
+  reflection: {
+    skillName: string;
+    skillPath: string;
+    domain: Domain;
+    sourceType: string;
+    triggerDecisionId?: string;
+    triggerPnl?: number;
+    triggerPnlPct?: number;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<void> {
+  const supabase = getSupabase();
+
+  const { error } = await supabase
+    .from('skill_reflections')
+    .upsert({
+      skill_name: reflection.skillName,
+      skill_path: reflection.skillPath,
+      domain: reflection.domain,
+      source_type: reflection.sourceType,
+      trigger_decision_id: reflection.triggerDecisionId,
+      trigger_pnl: reflection.triggerPnl,
+      trigger_pnl_pct: reflection.triggerPnlPct,
+      metadata: reflection.metadata || {},
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'skill_name,domain' });
+
+  if (error) {
+    console.error('Failed to log skill reflection:', error);
+  }
+}
+
+/**
+ * Update skill application stats
+ */
+export async function updateSkillApplication(
+  skillName: string,
+  domain: Domain,
+  wasSuccessful: boolean
+): Promise<void> {
+  const supabase = getSupabase();
+
+  // Get current stats
+  const { data: existing } = await supabase
+    .from('skill_reflections')
+    .select('times_applied, success_count, failure_count')
+    .eq('skill_name', skillName)
+    .eq('domain', domain)
+    .single();
+
+  if (!existing) return;
+
+  const { error } = await supabase
+    .from('skill_reflections')
+    .update({
+      times_applied: (existing.times_applied || 0) + 1,
+      success_count: wasSuccessful ? (existing.success_count || 0) + 1 : existing.success_count,
+      failure_count: !wasSuccessful ? (existing.failure_count || 0) + 1 : existing.failure_count,
+      last_applied: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('skill_name', skillName)
+    .eq('domain', domain);
+
+  if (error) {
+    console.error('Failed to update skill application:', error);
+  }
 }
 
 // =============================================================================
@@ -406,12 +730,11 @@ export async function getPortfolio(): Promise<Portfolio> {
 }
 
 // =============================================================================
-// MARKET CACHE
+// MARKET CACHE (unchanged - these tables still exist)
 // =============================================================================
 
 /**
  * Get cached pools from pool_cache table
- * Fetches 100 pools for rich context
  */
 export async function getCachedPools(limit = 100): Promise<unknown[]> {
   const supabase = getSupabase();
@@ -432,7 +755,6 @@ export async function getCachedPools(limit = 100): Promise<unknown[]> {
 
 /**
  * Get cached perp markets
- * Fetches 80 markets for comprehensive coverage
  */
 export async function getCachedPerpMarkets(limit = 80): Promise<unknown[]> {
   const supabase = getSupabase();
@@ -453,7 +775,6 @@ export async function getCachedPerpMarkets(limit = 80): Promise<unknown[]> {
 
 /**
  * Get cached polymarket markets
- * Fetches 80 markets for variety
  */
 export async function getCachedPolymarkets(limit = 80): Promise<unknown[]> {
   const supabase = getSupabase();
@@ -474,7 +795,6 @@ export async function getCachedPolymarkets(limit = 80): Promise<unknown[]> {
 
 /**
  * Get cached spot tokens
- * Fetches 60 tokens for variety (memes, trending, established)
  */
 export async function getCachedSpotTokens(limit = 60): Promise<unknown[]> {
   const supabase = getSupabase();
@@ -492,3 +812,20 @@ export async function getCachedSpotTokens(limit = 60): Promise<unknown[]> {
 
   return data || [];
 }
+
+// Legacy exports for compatibility
+export const CLAUDEFI_MODEL_ID = CLAUDEFI_AGENT_ID;
+export const updateDomainTotalAum = async () => {}; // No-op, AUM computed from cash + positions
+export const calculateAndUpdateDomainAum = async (domain: Domain) => {
+  const balance = await getDomainBalance(domain);
+  const positions = await getOpenPositions(domain);
+  return balance + positions.reduce((sum, p) => sum + (p.currentValueUsd || 0), 0);
+};
+export const calculateAndUpdateAllDomainsAum = async () => {
+  const domains: Domain[] = ['dlmm', 'perps', 'polymarket', 'spot'];
+  const results: Record<Domain, number> = { dlmm: 0, perps: 0, polymarket: 0, spot: 0 };
+  for (const domain of domains) {
+    results[domain] = await calculateAndUpdateDomainAum(domain);
+  }
+  return results;
+};

@@ -6,6 +6,7 @@
  */
 
 import { createWalletClient, http, type WalletClient, type Hex } from 'viem';
+import { resilientFetch, ResilientFetchError } from '../../infra/resilient-fetch.js';
 import { privateKeyToAccount } from 'viem/accounts';
 import { mainnet, arbitrumSepolia } from 'viem/chains';
 import { getConfig } from '../../config.js';
@@ -89,62 +90,30 @@ export class HyperliquidClient {
    * Fetch universe metadata (available markets)
    */
   async getMeta(): Promise<HyperliquidMeta> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    try {
-      const response = await fetch(`${this.baseUrl}/info`, {
+    return await resilientFetch<HyperliquidMeta>(
+      `${this.baseUrl}/info`,
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'meta' }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error(`Hyperliquid meta request failed: ${response.status}`);
-      }
-
-      return await response.json() as HyperliquidMeta;
-    } catch (error: unknown) {
-      clearTimeout(timeout);
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Hyperliquid meta request timed out after 10s');
-      }
-      throw error;
-    }
+      },
+      { timeoutMs: 10000 }
+    );
   }
 
   /**
    * Fetch all current prices
    */
   async getAllMids(): Promise<Record<string, string>> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    try {
-      const response = await fetch(`${this.baseUrl}/info`, {
+    return await resilientFetch<Record<string, string>>(
+      `${this.baseUrl}/info`,
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'allMids' }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error(`Hyperliquid allMids request failed: ${response.status}`);
-      }
-
-      return await response.json() as Record<string, string>;
-    } catch (error: unknown) {
-      clearTimeout(timeout);
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Hyperliquid allMids request timed out after 10s');
-      }
-      throw error;
-    }
+      },
+      { timeoutMs: 10000 }
+    );
   }
 
   /**
@@ -159,9 +128,6 @@ export class HyperliquidClient {
       const allMids = await this.getAllMids();
 
       // Get asset contexts (funding, OI, etc.)
-      const ctxController = new AbortController();
-      const ctxTimeout = setTimeout(() => ctxController.abort(), 10000);
-
       let assetCtxs: Array<{
         funding?: string;
         openInterest?: string;
@@ -169,21 +135,17 @@ export class HyperliquidClient {
       }> = [];
 
       try {
-        const ctxResponse = await fetch(`${this.baseUrl}/info`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'metaAndAssetCtxs' }),
-          signal: ctxController.signal,
-        });
-
-        clearTimeout(ctxTimeout);
-
-        if (ctxResponse.ok) {
-          const ctxData = await ctxResponse.json() as [unknown, typeof assetCtxs];
-          assetCtxs = ctxData[1] || [];
-        }
+        const ctxData = await resilientFetch<[unknown, typeof assetCtxs]>(
+          `${this.baseUrl}/info`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'metaAndAssetCtxs' }),
+          },
+          { timeoutMs: 10000 }
+        );
+        assetCtxs = ctxData[1] || [];
       } catch (error) {
-        clearTimeout(ctxTimeout);
         console.warn('Failed to fetch asset contexts, using defaults');
       }
 
@@ -237,25 +199,7 @@ export class HyperliquidClient {
     lookback: number = 24
   ): Promise<Candle[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/info`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'candleSnapshot',
-          req: {
-            coin: symbol,
-            interval,
-            startTime: Date.now() - lookback * (interval === '1h' ? 3600000 : 14400000),
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        console.warn(`Failed to fetch candles for ${symbol}: ${response.status}`);
-        return [];
-      }
-
-      const data = await response.json() as Array<{
+      const data = await resilientFetch<Array<{
         t?: number;
         T?: number;
         o: string;
@@ -263,7 +207,22 @@ export class HyperliquidClient {
         l: string;
         c: string;
         v?: string;
-      }>;
+      }>>(
+        `${this.baseUrl}/info`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'candleSnapshot',
+            req: {
+              coin: symbol,
+              interval,
+              startTime: Date.now() - lookback * (interval === '1h' ? 3600000 : 14400000),
+            },
+          }),
+        },
+        { timeoutMs: 10000 }
+      );
 
       if (!Array.isArray(data)) {
         return [];

@@ -5,6 +5,8 @@
  * Docs: https://www.geckoterminal.com/dex-api
  */
 
+import { resilientFetch, ResilientFetchError } from '../../infra/resilient-fetch.js';
+
 export interface GeckoPool {
   id: string;
   type: string;
@@ -87,20 +89,14 @@ export class GeckoTerminalClient {
     try {
       const url = `${this.baseUrl}/networks/${this.network}/trending_pools?page=1`;
 
-      const response = await fetch(url, {
+      const data = await resilientFetch<{ data: GeckoPool[] }>(url, {
         headers: {
           Accept: 'application/json',
           'User-Agent': 'Mozilla/5.0 (compatible; Claudefi/1.0)',
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`GeckoTerminal API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json() as { data: GeckoPool[] };
       const pools = data.data || [];
-
       return pools.slice(0, limit).map((pool) => this.parsePoolToToken(pool));
     } catch (error) {
       console.error('Failed to fetch trending pools:', error);
@@ -115,20 +111,14 @@ export class GeckoTerminalClient {
     try {
       const url = `${this.baseUrl}/networks/${this.network}/new_pools?page=1`;
 
-      const response = await fetch(url, {
+      const data = await resilientFetch<{ data: GeckoPool[] }>(url, {
         headers: {
           Accept: 'application/json',
           'User-Agent': 'Mozilla/5.0 (compatible; Claudefi/1.0)',
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`GeckoTerminal API error: ${response.status}`);
-      }
-
-      const data = await response.json() as { data: GeckoPool[] };
       const pools = data.data || [];
-
       return pools.slice(0, limit).map((pool) => this.parsePoolToToken(pool));
     } catch (error) {
       console.error('Failed to fetch new pools:', error);
@@ -143,22 +133,13 @@ export class GeckoTerminalClient {
     try {
       const url = `${this.baseUrl}/networks/${this.network}/tokens/${address}`;
 
-      const response = await fetch(url, {
+      const data = await resilientFetch<GeckoTokenResponse>(url, {
         headers: {
           Accept: 'application/json',
         },
       });
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error(`GeckoTerminal API error: ${response.status}`);
-      }
-
-      const data = await response.json() as GeckoTokenResponse;
       const token = data.data;
-
       return {
         address: token.attributes.address,
         symbol: token.attributes.symbol,
@@ -175,6 +156,10 @@ export class GeckoTerminalClient {
         poolAddress: '',
       };
     } catch (error) {
+      // Handle 404 specifically
+      if (error instanceof ResilientFetchError && error.statusCode === 404) {
+        return null;
+      }
       console.error(`Failed to fetch token ${address}:`, error);
       return null;
     }
@@ -187,19 +172,13 @@ export class GeckoTerminalClient {
     try {
       const url = `${this.baseUrl}/networks/${this.network}/tokens/${address}/pools?page=1`;
 
-      const response = await fetch(url, {
+      const data = await resilientFetch<{ data: GeckoPool[] }>(url, {
         headers: {
           Accept: 'application/json',
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`GeckoTerminal API error: ${response.status}`);
-      }
-
-      const data = await response.json() as { data: GeckoPool[] };
       const pools = data.data || [];
-
       return pools.slice(0, limit).map((pool) => this.parsePoolToToken(pool));
     } catch (error) {
       console.error(`Failed to fetch pools for ${address}:`, error);
@@ -214,19 +193,13 @@ export class GeckoTerminalClient {
     try {
       const url = `${this.baseUrl}/search/pools?query=${encodeURIComponent(query)}&network=${this.network}`;
 
-      const response = await fetch(url, {
+      const data = await resilientFetch<{ data: GeckoPool[] }>(url, {
         headers: {
           Accept: 'application/json',
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`GeckoTerminal API error: ${response.status}`);
-      }
-
-      const data = await response.json() as { data: GeckoPool[] };
       const pools = data.data || [];
-
       return pools.map((pool) => this.parsePoolToToken(pool));
     } catch (error) {
       console.error(`Failed to search tokens for ${query}:`, error);

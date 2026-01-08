@@ -11,6 +11,7 @@
  */
 
 import { Connection, Keypair, VersionedTransaction } from '@solana/web3.js';
+import { resilientFetch, ResilientFetchError } from '../../infra/resilient-fetch.js';
 
 // Well-known token mints
 export const TOKENS = {
@@ -142,15 +143,12 @@ export class JupiterClient {
     if (this.apiKey) {
       try {
         const url = `${this.priceUrlV3}?ids=${mint}`;
-        const response = await fetch(url, {
+        const data = await resilientFetch<Record<string, { usdPrice: number }>>(url, {
           headers: { 'x-api-key': this.apiKey },
         });
 
-        if (response.ok) {
-          const data = await response.json() as Record<string, { usdPrice: number }>;
-          if (data[mint]?.usdPrice) {
-            return data[mint].usdPrice;
-          }
+        if (data[mint]?.usdPrice) {
+          return data[mint].usdPrice;
         }
       } catch {
         // Jupiter v3 failed, try DexScreener
@@ -160,16 +158,12 @@ export class JupiterClient {
     // DexScreener fallback (free, no auth required)
     try {
       const dexUrl = `https://api.dexscreener.com/latest/dex/tokens/${mint}`;
-      const dexResponse = await fetch(dexUrl);
+      const dexData = await resilientFetch<{
+        pairs?: Array<{ priceUsd: string }>;
+      }>(dexUrl);
 
-      if (dexResponse.ok) {
-        const dexData = await dexResponse.json() as {
-          pairs?: Array<{ priceUsd: string }>;
-        };
-
-        if (dexData.pairs && dexData.pairs.length > 0) {
-          return parseFloat(dexData.pairs[0].priceUsd || '0');
-        }
+      if (dexData.pairs && dexData.pairs.length > 0) {
+        return parseFloat(dexData.pairs[0].priceUsd || '0');
       }
     } catch {
       // DexScreener failed
@@ -189,21 +183,18 @@ export class JupiterClient {
     if (this.apiKey) {
       try {
         const url = `${this.priceUrlV3}?ids=${mints.join(',')}`;
-        const response = await fetch(url, {
+        const data = await resilientFetch<Record<string, { usdPrice: number }>>(url, {
           headers: { 'x-api-key': this.apiKey },
         });
 
-        if (response.ok) {
-          const data = await response.json() as Record<string, { usdPrice: number }>;
-          for (const mint of mints) {
-            if (data[mint]?.usdPrice) {
-              prices.set(mint, data[mint].usdPrice);
-            }
+        for (const mint of mints) {
+          if (data[mint]?.usdPrice) {
+            prices.set(mint, data[mint].usdPrice);
           }
-          // If we got all prices, return
-          if (prices.size === mints.length) {
-            return prices;
-          }
+        }
+        // If we got all prices, return
+        if (prices.size === mints.length) {
+          return prices;
         }
       } catch {
         // Jupiter v3 failed, fall through to DexScreener
@@ -234,13 +225,7 @@ export class JupiterClient {
 
       const url = `${this.quoteApiUrl}/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
 
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error(`Jupiter Quote API error: ${response.status}`);
-      }
-
-      return await response.json() as JupiterQuote;
+      return await resilientFetch<JupiterQuote>(url);
     } catch (error) {
       console.error('Failed to get quote:', error);
       return null;
@@ -615,15 +600,9 @@ export class JupiterClient {
 
     try {
       const url = `${this.tokensApiV2}/search?query=${encodeURIComponent(query)}`;
-      const response = await fetch(url, {
+      return await resilientFetch<TokenV2[]>(url, {
         headers: { 'x-api-key': this.apiKey },
       });
-
-      if (!response.ok) {
-        throw new Error(`Jupiter Tokens V2 search failed: ${response.status}`);
-      }
-
-      return await response.json() as TokenV2[];
     } catch (error) {
       console.error('Failed to search tokens:', error);
       return [];
@@ -649,15 +628,9 @@ export class JupiterClient {
 
     try {
       const url = `${this.tokensApiV2}/${category}/${interval}?limit=${Math.min(limit, 100)}`;
-      const response = await fetch(url, {
+      return await resilientFetch<TokenV2[]>(url, {
         headers: { 'x-api-key': this.apiKey },
       });
-
-      if (!response.ok) {
-        throw new Error(`Jupiter Tokens V2 category failed: ${response.status}`);
-      }
-
-      return await response.json() as TokenV2[];
     } catch (error) {
       console.error('Failed to get tokens by category:', error);
       return [];
@@ -677,15 +650,9 @@ export class JupiterClient {
 
     try {
       const url = `${this.tokensApiV2}/recent`;
-      const response = await fetch(url, {
+      return await resilientFetch<TokenV2[]>(url, {
         headers: { 'x-api-key': this.apiKey },
       });
-
-      if (!response.ok) {
-        throw new Error(`Jupiter Tokens V2 recent failed: ${response.status}`);
-      }
-
-      return await response.json() as TokenV2[];
     } catch (error) {
       console.error('Failed to get recent tokens:', error);
       return [];
