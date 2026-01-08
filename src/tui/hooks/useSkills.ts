@@ -77,6 +77,13 @@ export function useSkills() {
     return () => clearInterval(interval);
   }, [fetchSkills]);
 
+  // Refresh on trigger
+  useEffect(() => {
+    if (state.refreshTrigger > 0) {
+      fetchSkills();
+    }
+  }, [state.refreshTrigger, fetchSkills]);
+
   // Computed values
   const skillsByDomain = state.skills.reduce((acc, s) => {
     if (!acc[s.domain]) acc[s.domain] = [];

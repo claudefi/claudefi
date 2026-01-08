@@ -4,7 +4,8 @@
  * Global state management for the TUI using React Context + useReducer.
  */
 
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useMemo } from 'react';
+import { loadConfig, saveConfig, TuiConfig } from '../utils/config.js';
 
 // Types
 export type Domain = 'dlmm' | 'perps' | 'polymarket' | 'spot';
@@ -75,7 +76,21 @@ export interface MarketData {
   };
 }
 
+export type InitStepStatus = 'pending' | 'loading' | 'done' | 'error';
+
+export interface InitProgress {
+  config: InitStepStatus;
+  database: InitStepStatus;
+  portfolio: InitStepStatus;
+  skills: InitStepStatus;
+  market: InitStepStatus;
+}
+
 export interface AppState {
+  // App phase
+  appPhase: 'loading' | 'ready' | 'running';
+  initProgress: InitProgress;
+
   // UI State
   focusedPanel: number;
   modalOpen: 'config' | 'skills' | 'help' | 'onboarding' | null;
@@ -98,6 +113,9 @@ export interface AppState {
   // Timing
   lastCycleTime?: Date;
   cycleNumber: number;
+
+  // Refresh trigger - increment to force all hooks to refetch
+  refreshTrigger: number;
 
   // Loading states
   loading: {
@@ -122,7 +140,11 @@ export type AppAction =
   | { type: 'CYCLE_START'; timestamp: Date }
   | { type: 'CYCLE_END' }
   | { type: 'SET_CONFIG'; config: Partial<Pick<AppState, 'mode' | 'cycleInterval' | 'activeDomains' | 'confidenceThreshold'>> }
-  | { type: 'SET_LOADING'; key: keyof AppState['loading']; loading: boolean };
+  | { type: 'SAVE_CONFIG' }
+  | { type: 'TRIGGER_REFRESH' }
+  | { type: 'SET_LOADING'; key: keyof AppState['loading']; loading: boolean }
+  | { type: 'SET_APP_PHASE'; phase: AppState['appPhase'] }
+  | { type: 'SET_INIT_STEP'; step: keyof InitProgress; status: InitStepStatus };
 
 // Initial state
 const initialAgentActivity: AgentActivity = {
@@ -131,15 +153,29 @@ const initialAgentActivity: AgentActivity = {
   toolCalls: 0,
 };
 
+// Load config from file on startup
+const loadedConfig = loadConfig();
+
 export const initialState: AppState = {
+  // Start in loading phase
+  appPhase: 'loading',
+  initProgress: {
+    config: 'pending',
+    database: 'pending',
+    portfolio: 'pending',
+    skills: 'pending',
+    market: 'pending',
+  },
+
   focusedPanel: 1,
   modalOpen: null,
   selectedSkillId: null,
 
-  mode: 'paper',
-  cycleInterval: 1800000, // 30 minutes
-  activeDomains: ['dlmm', 'perps', 'polymarket', 'spot'],
-  confidenceThreshold: 0.6,
+  // Use loaded config values
+  mode: loadedConfig.mode,
+  cycleInterval: loadedConfig.cycleInterval,
+  activeDomains: loadedConfig.activeDomains,
+  confidenceThreshold: loadedConfig.confidenceThreshold,
 
   positions: [],
   balances: [],
@@ -154,6 +190,8 @@ export const initialState: AppState = {
   marketData: null,
 
   cycleNumber: 0,
+
+  refreshTrigger: 0,
 
   loading: {
     positions: false,
@@ -226,10 +264,32 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_CONFIG':
       return { ...state, ...action.config };
 
+    case 'SAVE_CONFIG':
+      // Save current config state to file
+      saveConfig({
+        mode: state.mode,
+        cycleInterval: state.cycleInterval,
+        activeDomains: state.activeDomains,
+        confidenceThreshold: state.confidenceThreshold,
+      });
+      return state;
+
+    case 'TRIGGER_REFRESH':
+      return { ...state, refreshTrigger: state.refreshTrigger + 1 };
+
     case 'SET_LOADING':
       return {
         ...state,
         loading: { ...state.loading, [action.key]: action.loading },
+      };
+
+    case 'SET_APP_PHASE':
+      return { ...state, appPhase: action.phase };
+
+    case 'SET_INIT_STEP':
+      return {
+        ...state,
+        initProgress: { ...state.initProgress, [action.step]: action.status },
       };
 
     default:

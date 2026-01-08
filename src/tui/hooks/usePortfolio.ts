@@ -70,6 +70,13 @@ export function usePortfolio() {
     return () => clearInterval(interval);
   }, [fetchPortfolio]);
 
+  // Refresh on trigger
+  useEffect(() => {
+    if (state.refreshTrigger > 0) {
+      fetchPortfolio();
+    }
+  }, [state.refreshTrigger, fetchPortfolio]);
+
   // Computed values
   const totalValue = state.balances.reduce((sum, b) => sum + b.balance, 0) +
     state.positions.reduce((sum, p) => sum + p.currentValueUsd, 0);

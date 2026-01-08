@@ -1,11 +1,11 @@
 /**
  * Modal Component
  *
- * Base modal overlay for TUI.
+ * Base modal overlay for TUI with dynamic centering.
  */
 
 import React from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, useStdout } from 'ink';
 
 export interface ModalProps {
   title: string;
@@ -20,6 +20,8 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   width = 50,
 }) => {
+  const { stdout } = useStdout();
+
   // Handle ESC and q to close
   useInput((input, key) => {
     if (key.escape || input === 'q') {
@@ -27,14 +29,20 @@ export const Modal: React.FC<ModalProps> = ({
     }
   });
 
-  const innerWidth = width - 4; // Account for borders and padding
+  // Calculate centering based on terminal size
+  const termWidth = stdout?.columns ?? 80;
+  const termHeight = stdout?.rows ?? 24;
+
+  // Center horizontally, offset from top
+  const marginLeft = Math.max(0, Math.floor((termWidth - width) / 2));
+  const marginTop = Math.max(1, Math.floor(termHeight / 6));
 
   return (
     <Box
       flexDirection="column"
       position="absolute"
-      marginLeft={10}
-      marginTop={3}
+      marginLeft={marginLeft}
+      marginTop={marginTop}
     >
       {/* Modal box */}
       <Box

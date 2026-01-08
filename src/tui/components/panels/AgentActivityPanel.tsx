@@ -110,7 +110,7 @@ export const AgentActivityPanel: React.FC = () => {
                 </Text>
                 <Text> {a.lastDecision?.action} </Text>
                 <Text dimColor>
-                  ({(a.lastDecision?.confidence ?? 0 * 100).toFixed(0)}%)
+                  ({((a.lastDecision?.confidence ?? 0) * 100).toFixed(0)}%)
                 </Text>
               </Box>
             ))}

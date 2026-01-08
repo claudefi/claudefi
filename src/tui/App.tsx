@@ -9,6 +9,7 @@ import { Box } from 'ink';
 import { AppProvider, useAppContext } from './context/AppContext.js';
 import { Header } from './components/layout/Header.js';
 import { Dashboard } from './components/layout/Dashboard.js';
+import { LoadingScreen } from './components/LoadingScreen.js';
 import { PositionsPanel } from './components/panels/PositionsPanel.js';
 import { AgentActivityPanel } from './components/panels/AgentActivityPanel.js';
 import { SkillsPanel } from './components/panels/SkillsPanel.js';
@@ -16,11 +17,15 @@ import { MarketDataPanel } from './components/panels/MarketDataPanel.js';
 import { ConfigModal } from './components/modals/ConfigModal.js';
 import { SkillsModal } from './components/modals/SkillsModal.js';
 import { HelpModal } from './components/modals/HelpModal.js';
+import { useInitialization } from './hooks/useInitialization.js';
 
 // Inner app component that uses context
 const AppInner: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const [focusedPanel, setFocusedPanel] = useState(1);
+
+  // Run initialization sequence
+  const { isRunning } = useInitialization();
 
   const handlePanelFocus = useCallback((panel: number) => {
     setFocusedPanel(panel);
@@ -43,6 +48,15 @@ const AppInner: React.FC = () => {
     dispatch({ type: 'CLOSE_MODAL' });
   }, [dispatch]);
 
+  const handleRefresh = useCallback(() => {
+    dispatch({ type: 'TRIGGER_REFRESH' });
+  }, [dispatch]);
+
+  // Show loading screen during initialization
+  if (!isRunning) {
+    return <LoadingScreen />;
+  }
+
   return (
     <Box flexDirection="column" width="100%" height="100%">
       {/* Header with logo */}
@@ -57,6 +71,7 @@ const AppInner: React.FC = () => {
         onOpenConfig={handleOpenConfig}
         onOpenSkills={handleOpenSkills}
         onOpenHelp={handleOpenHelp}
+        onRefresh={handleRefresh}
         children={{
           positions: <PositionsPanel />,
           agents: <AgentActivityPanel />,

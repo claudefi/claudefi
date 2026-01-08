@@ -25,6 +25,7 @@ export interface DashboardProps {
   onOpenConfig?: () => void;
   onOpenSkills?: () => void;
   onOpenHelp?: () => void;
+  onRefresh?: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -37,6 +38,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenConfig,
   onOpenSkills,
   onOpenHelp,
+  onRefresh,
 }) => {
   const { exit } = useApp();
 
@@ -68,6 +70,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         break;
       case '?':
         onOpenHelp?.();
+        break;
+      case 'r':
+        onRefresh?.();
         break;
     }
   });

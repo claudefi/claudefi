@@ -96,6 +96,13 @@ export function useMarketData() {
     return () => clearInterval(interval);
   }, [fetchMarketData]);
 
+  // Refresh on trigger
+  useEffect(() => {
+    if (state.refreshTrigger > 0) {
+      fetchMarketData();
+    }
+  }, [state.refreshTrigger, fetchMarketData]);
+
   return {
     marketData: state.marketData,
     loading: state.loading.market,

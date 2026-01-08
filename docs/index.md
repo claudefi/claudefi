@@ -98,9 +98,14 @@ npm run ralph
   background-image: url('/bg-agent.png');
   background-size: cover;
   background-position: center right;
-  opacity: 0.15;
+  opacity: 0.08;
   pointer-events: none;
   z-index: 0;
+}
+
+/* Dark mode - slightly more visible */
+.dark .VPHero::before {
+  opacity: 0.15;
 }
 
 .VPHero .container {
