@@ -2,9 +2,9 @@
 layout: home
 
 hero:
-  name: claudefi
-  text: autonomous defi trading agent
-  tagline: self-improving trading powered by claude agent sdk
+  name: ClaudeFi
+  text: autonomous claude agents across defi
+  tagline: self-improving ai that learns from every trade
   actions:
     - theme: brand
       text: get started

@@ -10,8 +10,13 @@
 
 import { prisma } from './db/prisma.js';
 import type { Domain } from './types/index.js';
-import { recordSkillOutcome } from './skills/skill-outcome.js';
+import { recordSkillOutcome, wilsonScoreLowerBound } from './skills/skill-outcome.js';
 import { runPromotionPipeline } from './learning/promotion.js';
+import {
+  MIN_APPLICATIONS_FOR_PROVEN,
+  MIN_SUCCESS_RATE_FOR_EFFECTIVE,
+  MIN_WILSON_LOWER_BOUND,
+} from './skills/types.js';
 
 // =============================================================================
 // CONFIGURATION
@@ -212,6 +217,7 @@ interface LessonStats {
   domain: string;
   timesApplied: number;
   successRate: number;
+  wilsonScore: number;
   provenEffective: boolean;
   wasActuallyGood: boolean;
   correctlyClassified: boolean;
@@ -237,6 +243,12 @@ async function analyzeLessons(
         ? reflection.successCount / reflection.timesApplied
         : 0;
 
+      // Calculate Wilson score
+      const wilsonScore = wilsonScoreLowerBound(
+        reflection.successCount,
+        reflection.timesApplied
+      );
+
       // A lesson is "correctly classified" if:
       // - It's a good lesson and proven effective, OR
       // - It's a bad lesson and NOT proven effective
@@ -247,6 +259,7 @@ async function analyzeLessons(
         domain: lesson.domain,
         timesApplied: reflection.timesApplied,
         successRate,
+        wilsonScore,
         provenEffective: reflection.provenEffective ?? false,
         wasActuallyGood: lesson.isGood,
         correctlyClassified,
@@ -262,15 +275,21 @@ function printAnalysis(stats: LessonStats[]): void {
   console.log('                     STRESS TEST ANALYSIS');
   console.log('══════════════════════════════════════════════════════════════\n');
 
+  // Show current thresholds
+  console.log('⚙️  Current Thresholds');
+  console.log(`   MIN_APPLICATIONS_FOR_PROVEN: ${MIN_APPLICATIONS_FOR_PROVEN}`);
+  console.log(`   MIN_SUCCESS_RATE_FOR_EFFECTIVE: ${(MIN_SUCCESS_RATE_FOR_EFFECTIVE * 100).toFixed(0)}%`);
+  console.log(`   MIN_WILSON_LOWER_BOUND: ${MIN_WILSON_LOWER_BOUND}\n`);
+
   // Overall classification accuracy
-  const withEnoughData = stats.filter(s => s.timesApplied >= 3);
+  const withEnoughData = stats.filter(s => s.timesApplied >= MIN_APPLICATIONS_FOR_PROVEN);
   const correctCount = withEnoughData.filter(s => s.correctlyClassified).length;
   const accuracy = withEnoughData.length > 0
     ? (correctCount / withEnoughData.length * 100).toFixed(1)
     : 'N/A';
 
   console.log('📊 Classification Accuracy');
-  console.log(`   Lessons with ≥3 applications: ${withEnoughData.length}`);
+  console.log(`   Lessons with ≥${MIN_APPLICATIONS_FOR_PROVEN} applications: ${withEnoughData.length}`);
   console.log(`   Correctly classified: ${correctCount}`);
   console.log(`   Accuracy: ${accuracy}%\n`);
 
@@ -279,18 +298,36 @@ function printAnalysis(stats: LessonStats[]): void {
   const actuallyBad = stats.filter(s => !s.wasActuallyGood);
 
   const truePositives = actuallyGood.filter(s => s.provenEffective).length;
-  const falseNegatives = actuallyGood.filter(s => !s.provenEffective && s.timesApplied >= 3).length;
-  const trueNegatives = actuallyBad.filter(s => !s.provenEffective && s.timesApplied >= 3).length;
+  const falseNegatives = actuallyGood.filter(s => !s.provenEffective && s.timesApplied >= MIN_APPLICATIONS_FOR_PROVEN).length;
+  const trueNegatives = actuallyBad.filter(s => !s.provenEffective && s.timesApplied >= MIN_APPLICATIONS_FOR_PROVEN).length;
   const falsePositives = actuallyBad.filter(s => s.provenEffective).length;
+
+  // Calculate rates
+  const totalClassified = truePositives + falseNegatives + trueNegatives + falsePositives;
+  const falsePositiveRate = (trueNegatives + falsePositives) > 0
+    ? (falsePositives / (trueNegatives + falsePositives) * 100).toFixed(1)
+    : 'N/A';
 
   console.log('📈 Confusion Matrix');
   console.log(`   True Positives (good lesson, marked proven): ${truePositives}`);
   console.log(`   False Negatives (good lesson, not marked): ${falseNegatives}`);
   console.log(`   True Negatives (bad lesson, not proven): ${trueNegatives}`);
-  console.log(`   False Positives (bad lesson, marked proven): ${falsePositives}\n`);
+  console.log(`   False Positives (bad lesson, marked proven): ${falsePositives}`);
+  console.log(`   False Positive Rate: ${falsePositiveRate}%\n`);
+
+  // Wilson score distribution
+  console.log('📐 Wilson Score Distribution');
+  const wilsonBuckets = [0, 0.25, 0.35, 0.45, 0.55, 1.0];
+  for (let i = 0; i < wilsonBuckets.length - 1; i++) {
+    const count = stats.filter(s =>
+      s.wilsonScore >= wilsonBuckets[i] && s.wilsonScore < wilsonBuckets[i + 1]
+    ).length;
+    const label = wilsonBuckets[i + 1] <= MIN_WILSON_LOWER_BOUND ? '⬇️' : '✅';
+    console.log(`   ${(wilsonBuckets[i] * 100).toFixed(0)}%-${(wilsonBuckets[i + 1] * 100).toFixed(0)}%: ${'█'.repeat(count)} (${count}) ${label}`);
+  }
 
   // Success rate distribution
-  console.log('📉 Success Rate Distribution');
+  console.log('\n📉 Success Rate Distribution');
   const buckets = [0, 0.25, 0.5, 0.75, 1.0];
   for (let i = 0; i < buckets.length - 1; i++) {
     const count = stats.filter(s =>
@@ -299,30 +336,30 @@ function printAnalysis(stats: LessonStats[]): void {
     console.log(`   ${(buckets[i] * 100).toFixed(0)}%-${(buckets[i + 1] * 100).toFixed(0)}%: ${'█'.repeat(count)} (${count})`);
   }
 
-  // Top performers
-  console.log('\n🏆 Top 5 Lessons by Success Rate');
+  // Top performers (by Wilson score for more accurate ranking)
+  console.log('\n🏆 Top 5 Lessons by Wilson Score');
   const top5 = [...stats]
-    .filter(s => s.timesApplied >= 3)
-    .sort((a, b) => b.successRate - a.successRate)
+    .filter(s => s.timesApplied >= MIN_APPLICATIONS_FOR_PROVEN)
+    .sort((a, b) => b.wilsonScore - a.wilsonScore)
     .slice(0, 5);
 
   for (const s of top5) {
     const actualLabel = s.wasActuallyGood ? '✓ good' : '✗ bad';
     const provenLabel = s.provenEffective ? 'PROVEN' : 'not proven';
-    console.log(`   ${s.name}: ${(s.successRate * 100).toFixed(1)}% (${s.timesApplied} uses) [${actualLabel}] [${provenLabel}]`);
+    console.log(`   ${s.name}: Wilson ${s.wilsonScore.toFixed(2)}, Rate ${(s.successRate * 100).toFixed(0)}% (${s.timesApplied} uses) [${actualLabel}] [${provenLabel}]`);
   }
 
   // Worst performers
-  console.log('\n💀 Bottom 5 Lessons by Success Rate');
+  console.log('\n💀 Bottom 5 Lessons by Wilson Score');
   const bottom5 = [...stats]
-    .filter(s => s.timesApplied >= 3)
-    .sort((a, b) => a.successRate - b.successRate)
+    .filter(s => s.timesApplied >= MIN_APPLICATIONS_FOR_PROVEN)
+    .sort((a, b) => a.wilsonScore - b.wilsonScore)
     .slice(0, 5);
 
   for (const s of bottom5) {
     const actualLabel = s.wasActuallyGood ? '✓ good' : '✗ bad';
     const provenLabel = s.provenEffective ? 'PROVEN' : 'not proven';
-    console.log(`   ${s.name}: ${(s.successRate * 100).toFixed(1)}% (${s.timesApplied} uses) [${actualLabel}] [${provenLabel}]`);
+    console.log(`   ${s.name}: Wilson ${s.wilsonScore.toFixed(2)}, Rate ${(s.successRate * 100).toFixed(0)}% (${s.timesApplied} uses) [${actualLabel}] [${provenLabel}]`);
   }
 }
 

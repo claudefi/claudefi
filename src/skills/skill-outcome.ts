@@ -156,6 +156,7 @@ export async function recordSkillOutcome(
 
 /**
  * Update skill effectiveness based on new outcome
+ * Uses Wilson score for statistical confidence and supports demotion
  */
 async function updateSkillEffectiveness(
   skillName: string,
@@ -183,14 +184,34 @@ async function updateSkillEffectiveness(
     // Track consecutive failures
     const consecutiveFailures = wasSuccessful ? 0 : (reflection.consecutiveFailures ?? 0) + 1;
 
-    // Check if skill becomes proven effective
-    const provenEffective =
-      timesApplied >= MIN_APPLICATIONS_FOR_PROVEN &&
-      (effectivenessScore ?? 0) >= MIN_SUCCESS_RATE_FOR_EFFECTIVE;
+    // Check if skill meets proven criteria using Wilson score
+    const { provenEffective: meetsProven, wilsonScore } = meetsProvenCriteria(successCount, timesApplied);
 
-    const qualifiedAt = provenEffective && !reflection.provenEffective
-      ? new Date()
-      : reflection.qualifiedAt;
+    // Determine final proven status (with demotion logic)
+    let provenEffective = meetsProven;
+
+    // DEMOTION: Check if previously proven skill should be demoted
+    if (reflection.provenEffective && !meetsProven) {
+      if (consecutiveFailures >= MIN_FAILURES_FOR_DEMOTION) {
+        provenEffective = false;
+        console.log(
+          `  📉 Demoting '${skillName}': ${consecutiveFailures} failures, Wilson ${wilsonScore.toFixed(2)}`
+        );
+      } else if ((effectivenessScore ?? 0) < MIN_SUCCESS_RATE_FOR_EFFECTIVE) {
+        provenEffective = false;
+        console.log(
+          `  📉 Demoting '${skillName}': success rate ${((effectivenessScore ?? 0) * 100).toFixed(0)}%`
+        );
+      }
+    }
+
+    // Track qualified timestamp
+    let qualifiedAt = reflection.qualifiedAt;
+    if (provenEffective && !reflection.provenEffective) {
+      qualifiedAt = new Date();
+    } else if (!provenEffective && reflection.provenEffective) {
+      qualifiedAt = null; // Clear on demotion
+    }
 
     await prisma.skillReflection.update({
       where: { id: reflection.id },
@@ -208,10 +229,12 @@ async function updateSkillEffectiveness(
 
     // Log status changes
     if (provenEffective && !reflection.provenEffective) {
-      console.log(`  🏆 Skill ${skillName} is now PROVEN EFFECTIVE`);
+      console.log(
+        `  🏆 Skill '${skillName}' is now PROVEN (Wilson: ${wilsonScore.toFixed(2)}, Rate: ${((effectivenessScore ?? 0) * 100).toFixed(0)}%)`
+      );
     }
     if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-      console.log(`  ⚠️ Skill ${skillName} has ${consecutiveFailures} consecutive failures`);
+      console.log(`  ⚠️ Skill '${skillName}' has ${consecutiveFailures} consecutive failures`);
     }
 
     return true;
@@ -297,7 +320,7 @@ export async function getUnderperformingSkills(domain: Domain): Promise<Array<{
 
 /**
  * Recalculate effectiveness for all skills in a domain
- * Used for maintenance/recovery
+ * Uses Wilson score for statistical confidence
  */
 export async function recalculateAllEffectiveness(domain: Domain): Promise<number> {
   const reflections = await prisma.skillReflection.findMany({
@@ -312,9 +335,8 @@ export async function recalculateAllEffectiveness(domain: Domain): Promise<numbe
       ? reflection.successCount / timesApplied
       : null;
 
-    const provenEffective =
-      timesApplied >= MIN_APPLICATIONS_FOR_PROVEN &&
-      (effectivenessScore ?? 0) >= MIN_SUCCESS_RATE_FOR_EFFECTIVE;
+    // Use Wilson score for proven effectiveness
+    const { provenEffective } = meetsProvenCriteria(reflection.successCount, timesApplied);
 
     await prisma.skillReflection.update({
       where: { id: reflection.id },
@@ -331,4 +353,91 @@ export async function recalculateAllEffectiveness(domain: Domain): Promise<numbe
   }
 
   return updated;
+}
+
+// =============================================================================
+// TIME-WEIGHTED SUCCESS RATE
+// =============================================================================
+
+/**
+ * Calculate time-weighted success rate for a skill
+ * Recent outcomes are weighted more heavily using exponential decay
+ */
+export async function calculateWeightedSuccessRate(
+  skillName: string,
+  domain: string
+): Promise<{ weightedRate: number; effectiveSamples: number; rawCount: number }> {
+  const recommendations = await prisma.skillRecommendation.findMany({
+    where: {
+      skillName,
+      domain,
+      wasApplied: true,
+      tradeOutcome: { in: ['profit', 'loss'] },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (recommendations.length === 0) {
+    return { weightedRate: 0, effectiveSamples: 0, rawCount: 0 };
+  }
+
+  const now = Date.now();
+  let weightedSuccesses = 0;
+  let totalWeight = 0;
+
+  for (const rec of recommendations) {
+    const ageMs = now - rec.createdAt.getTime();
+    const ageDays = ageMs / (1000 * 60 * 60 * 24);
+    const weight = Math.exp(-ageDays / RECENCY_DECAY_DAYS);
+
+    if (rec.tradeOutcome === 'profit') {
+      weightedSuccesses += weight;
+    }
+    totalWeight += weight;
+  }
+
+  return {
+    weightedRate: totalWeight > 0 ? weightedSuccesses / totalWeight : 0,
+    effectiveSamples: totalWeight,
+    rawCount: recommendations.length,
+  };
+}
+
+/**
+ * Get comprehensive skill statistics including Wilson score
+ */
+export async function getComprehensiveSkillStats(
+  skillName: string,
+  domain: Domain
+): Promise<{
+  timesApplied: number;
+  successRate: number;
+  wilsonScore: number;
+  weightedSuccessRate: number;
+  provenEffective: boolean;
+  consecutiveFailures: number;
+} | null> {
+  const reflection = await prisma.skillReflection.findUnique({
+    where: {
+      skillName_domain: { skillName, domain },
+    },
+  });
+
+  if (!reflection) return null;
+
+  const successRate = reflection.timesApplied > 0
+    ? reflection.successCount / reflection.timesApplied
+    : 0;
+
+  const wilsonScore = wilsonScoreLowerBound(reflection.successCount, reflection.timesApplied);
+  const { weightedRate } = await calculateWeightedSuccessRate(skillName, domain);
+
+  return {
+    timesApplied: reflection.timesApplied,
+    successRate,
+    wilsonScore,
+    weightedSuccessRate: weightedRate,
+    provenEffective: reflection.provenEffective ?? false,
+    consecutiveFailures: reflection.consecutiveFailures ?? 0,
+  };
 }

@@ -3,11 +3,19 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 
 export default withMermaid(
   defineConfig({
-    title: 'claudefi',
-    description: 'Autonomous DeFi Trading Agent powered by Claude Agent SDK',
+    title: 'ClaudeFi',
+    description: 'Autonomous Claude agents trading across DeFi. Self-improving AI that learns from every trade.',
 
     head: [
-      ['link', { rel: 'icon', type: 'image/png', href: '/favicon.png' }]
+      ['link', { rel: 'icon', type: 'image/png', href: '/favicon.png' }],
+      ['meta', { name: 'keywords', content: 'claudefi, claude, ai trading, defi, autonomous agents, claude agent sdk, solana, hyperliquid, polymarket' }],
+      ['meta', { property: 'og:title', content: 'ClaudeFi - Autonomous Claude Agents Across DeFi' }],
+      ['meta', { property: 'og:description', content: 'Self-improving AI agents that learn from every trade. Liquidity provision, perpetuals, spot, and prediction markets.' }],
+      ['meta', { property: 'og:type', content: 'website' }],
+      ['meta', { property: 'og:url', content: 'https://claudefi.com' }],
+      ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+      ['meta', { name: 'twitter:title', content: 'ClaudeFi - Autonomous Claude Agents Across DeFi' }],
+      ['meta', { name: 'twitter:description', content: 'Self-improving AI agents that learn from every trade.' }]
     ],
 
     themeConfig: {
@@ -120,8 +128,8 @@ export default withMermaid(
       },
 
       footer: {
-        message: 'built for the trenches',
-        copyright: 'claudefi.com'
+        message: 'autonomous claude agents across defi',
+        copyright: '2025 ClaudeFi'
       },
 
       search: {
