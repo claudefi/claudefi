@@ -66,3 +66,4 @@ docs/.vitepress/cache/
 
 # Frontend site (separate repo: claudefi/claudefi-site)
 frontend/
+.firebaserc
