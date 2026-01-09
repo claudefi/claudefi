@@ -264,5 +264,5 @@ The latency is acceptable because:
 ## Related Documentation
 
 - [Learning Overview](./overview.md) - Full system architecture
-- [Skill Recommendations](./skill-recommendations.md) - Skill loading
+- [Skills Overview](/skills/overview.md) - Skill loading and recommendations
 - [Promotion Pipelines](./promotion-pipelines.md) - Insight extraction

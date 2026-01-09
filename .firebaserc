@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "llm-arena-478221"
+  },
+  "targets": {
+    "llm-arena-478221": {
+      "hosting": {
+        "claudefi-docs": [
+          "claudefi-docs"
+        ]
+      }
+    }
+  }
+}

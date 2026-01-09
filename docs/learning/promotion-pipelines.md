@@ -350,6 +350,6 @@ Day 7+: Skill loaded in DLMM decisions
 ## Related Documentation
 
 - [Learning Overview](./overview.md) - Full system architecture
-- [Skill Recommendations](./skill-recommendations.md) - How skills are loaded
+- [Lesson Recommendations](./lesson-recommendations.md) - How lessons are loaded
 - [Inline Judge](./inline-judge.md) - Same-cycle evaluation
 - [Skills Overview](../skills/overview.md) - Skills system
