@@ -198,6 +198,10 @@ Full docs at [claudefi.com](https://claudefi.com) or in the [`docs/`](./docs/) d
 
 join the trenches.
 
+$CLAUDEFI
+
+7CeHRo3RJEYgXesE8YGrhJx5ZTrH2YreFn9a3aFdpump
+
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/nzW8srS9)
 
 share strategies. contribute skills. build together.
